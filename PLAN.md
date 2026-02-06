@@ -139,6 +139,11 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] XP over time chart (per day/week)
   - [ ] Recent reviews list
 - [ ] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
+- [ ] **Multi-repo support**: Generalize to any GitHub repo
+  - [ ] URL structure: `/:org/:repo` → repo leaderboard
+  - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
+  - [ ] Global leaderboard at `/` (all repos combined)
+  - [ ] Repo selector/switcher
 - [ ] Test coverage
 - [ ] Error handling improvements
 
