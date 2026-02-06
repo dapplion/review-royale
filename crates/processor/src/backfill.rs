@@ -188,7 +188,7 @@ impl Backfiller {
             db::prs::update_timestamps(&self.pool, db_pr.id, pr.merged_at, pr.closed_at).await?;
         }
 
-        // Fetch and process reviews
+        // Fetch reviews
         let reviews = match self.client.list_reviews(owner, repo_name, pr.number).await {
             Ok(r) => r,
             Err(github::client::ClientError::RateLimited { retry_after }) => {
@@ -200,8 +200,34 @@ impl Backfiller {
             }
         };
 
+        // Fetch review comments to count per review
+        let comments = match self
+            .client
+            .list_review_comments(owner, repo_name, pr.number)
+            .await
+        {
+            Ok(c) => c,
+            Err(github::client::ClientError::RateLimited { retry_after }) => {
+                return Err(BackfillError::RateLimited(retry_after));
+            }
+            Err(e) => {
+                debug!("Failed to fetch comments for PR #{}: {}", pr.number, e);
+                Vec::new()
+            }
+        };
+
+        // Count comments per review ID
+        let mut comment_counts: std::collections::HashMap<i64, i32> =
+            std::collections::HashMap::new();
+        for comment in &comments {
+            if let Some(review_id) = comment.pull_request_review_id {
+                *comment_counts.entry(review_id).or_insert(0) += 1;
+            }
+        }
+
         let mut reviews_count = 0u32;
         let mut first_review_at = None;
+        let mut first_reviewer_id = None;
 
         for review in reviews {
             // Skip reviews without a user (ghost accounts)
@@ -235,6 +261,9 @@ impl Backfiller {
                 _ => ReviewState::Pending,
             };
 
+            // Get comment count for this review
+            let comments_count = comment_counts.get(&review.id).copied().unwrap_or(0);
+
             // Insert review (ignore if already exists)
             match db::reviews::insert(
                 &self.pool,
@@ -243,7 +272,7 @@ impl Backfiller {
                 review.id,
                 review_state,
                 review.body.as_deref(),
-                0, // TODO: count comments
+                comments_count,
                 submitted_at,
             )
             .await
@@ -251,9 +280,10 @@ impl Backfiller {
                 Ok(_) => {
                     reviews_count += 1;
 
-                    // Track first review
+                    // Track first review (by submitted_at)
                     if first_review_at.is_none() || submitted_at < first_review_at.unwrap() {
                         first_review_at = Some(submitted_at);
+                        first_reviewer_id = Some(reviewer.id);
                     }
 
                     // Award XP

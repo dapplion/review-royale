@@ -12,20 +12,42 @@ pub async fn get_leaderboard(
     since: DateTime<Utc>,
     limit: i32,
 ) -> Result<Vec<LeaderboardEntry>, sqlx::Error> {
+    // First, get first reviews per PR (the reviewer who submitted first)
+    // Then count how many times each user was first
     let rows = sqlx::query(
         r#"
+        WITH first_reviews AS (
+            SELECT DISTINCT ON (r.pr_id) 
+                r.pr_id,
+                r.reviewer_id
+            FROM reviews r
+            JOIN pull_requests pr ON pr.id = r.pr_id
+            WHERE r.submitted_at >= $1
+              AND ($2::uuid IS NULL OR pr.repo_id = $2)
+            ORDER BY r.pr_id, r.submitted_at ASC
+        ),
+        user_stats AS (
+            SELECT 
+                u.id,
+                COUNT(r.id)::int as reviews_given,
+                COALESCE(SUM(r.comments_count), 0)::int as comments_written,
+                COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews
+            FROM users u
+            LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $1
+            LEFT JOIN pull_requests pr ON pr.id = r.pr_id
+            WHERE ($2::uuid IS NULL OR pr.repo_id = $2)
+            GROUP BY u.id
+            HAVING COUNT(r.id) > 0
+        )
         SELECT 
             u.id, u.github_id, u.login, u.avatar_url, u.xp, u.level,
             u.created_at, u.updated_at,
-            COUNT(r.id)::int as reviews_given,
-            COALESCE(SUM(r.comments_count), 0)::int as comments_written
+            us.reviews_given,
+            us.comments_written,
+            us.first_reviews
         FROM users u
-        LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $1
-        LEFT JOIN pull_requests pr ON pr.id = r.pr_id
-        WHERE ($2::uuid IS NULL OR pr.repo_id = $2)
-        GROUP BY u.id
-        HAVING COUNT(r.id) > 0
-        ORDER BY COUNT(r.id) DESC, u.xp DESC
+        JOIN user_stats us ON us.id = u.id
+        ORDER BY us.reviews_given DESC, u.xp DESC
         LIMIT $3
         "#,
     )
@@ -56,6 +78,7 @@ pub async fn get_leaderboard(
                 stats: UserStats {
                     reviews_given: row.get("reviews_given"),
                     comments_written: row.get("comments_written"),
+                    first_reviews: row.get("first_reviews"),
                     ..Default::default()
                 },
             }
