@@ -60,10 +60,7 @@ pub async fn trigger(
         Ok(progress) => {
             let response = BackfillResponse {
                 success: true,
-                message: format!(
-                    "Backfill complete for {}/{}",
-                    owner, name
-                ),
+                message: format!("Backfill complete for {}/{}", owner, name),
                 prs_processed: progress.prs_processed,
                 reviews_processed: progress.reviews_processed,
                 users_created: progress.users_created,
