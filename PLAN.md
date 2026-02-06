@@ -132,6 +132,12 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Track first reviews (who reviewed first)
 - [x] Sort leaderboard by XP (not review count)
 - [x] Pre-push hook for cargo fmt
+- [ ] Footer with XP calculation formula/specs
+- [ ] Data range info: "Last synced X, data from Y"
+- [ ] Individual contributor view (click username → profile page)
+  - [ ] Score breakdown (why XP is X)
+  - [ ] XP over time chart (per day/week)
+  - [ ] Recent reviews list
 - [ ] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
 - [ ] Test coverage
 - [ ] Error handling improvements
