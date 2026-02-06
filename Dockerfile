@@ -26,6 +26,9 @@ COPY --from=builder /app/target/release/review-royale-api /app/review-royale-api
 # Copy migrations
 COPY --from=builder /app/migrations ./migrations
 
+# Copy static files
+COPY --from=builder /app/crates/api/static ./static
+
 EXPOSE 3000
 
 CMD ["/app/review-royale-api"]

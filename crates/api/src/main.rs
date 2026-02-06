@@ -5,6 +5,7 @@ use processor::{SyncConfig, SyncService};
 use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
@@ -62,7 +63,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Build router
     let app = Router::new()
-        .route("/", get(routes::health::root))
         .route("/health", get(routes::health::health))
         .route("/api/repos", get(routes::repos::list))
         .route("/api/repos/:owner/:name", get(routes::repos::get))
@@ -77,6 +77,7 @@ async fn main() -> anyhow::Result<()> {
             "/api/backfill/:owner/:name",
             get(routes::backfill::status).post(routes::backfill::trigger),
         )
+        .nest_service("/", ServeDir::new("static").append_index_html_on_directories(true))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
