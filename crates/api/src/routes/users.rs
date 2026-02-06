@@ -125,7 +125,7 @@ pub async fn reviews(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let limit = query.limit.min(50).max(1); // Cap at 50, min 1
+    let limit = query.limit.clamp(1, 50); // Cap at 50, min 1
     let reviews = db::users::get_recent_reviews(&state.pool, user.id, limit)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
