@@ -38,6 +38,7 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
     info!("Grouped reviews into {} unique (pr, reviewer) pairs", review_groups.len());
 
     // Step 4: Process each group into sessions and award XP
+    let total_reviews_count: usize = review_groups.values().map(|v| v.len()).sum();
     let mut total_sessions = 0;
     let mut total_xp_awarded = 0i64;
     let mut users_updated = std::collections::HashSet::new();
@@ -82,7 +83,7 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
     );
 
     Ok(RecalculationStats {
-        total_reviews: review_groups.values().map(|v| v.len()).sum(),
+        total_reviews: total_reviews_count,
         total_sessions,
         total_xp_awarded,
         users_updated: users_updated.len(),
