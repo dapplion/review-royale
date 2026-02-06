@@ -3,5 +3,6 @@
 pub mod client;
 
 pub use client::{
-    ClientError, GitHubClient, GithubPr, GithubRepo, GithubReview, GithubReviewComment, GithubUser,
+    ClientError, GitHubClient, GithubCommit, GithubPr, GithubRepo, GithubReview,
+    GithubReviewComment, GithubUser,
 };

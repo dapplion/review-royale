@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use tracing::info;
 
 pub mod achievements;
+pub mod commits;
 pub mod leaderboard;
 pub mod prs;
 pub mod repos;

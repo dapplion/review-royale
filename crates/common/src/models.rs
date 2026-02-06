@@ -64,6 +64,18 @@ pub struct Review {
     pub submitted_at: DateTime<Utc>,
 }
 
+/// A commit on a PR
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Commit {
+    pub id: Uuid,
+    pub pr_id: Uuid,
+    pub sha: String,
+    pub author_id: Option<Uuid>,
+    pub committed_at: DateTime<Utc>,
+    pub message: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ReviewState {

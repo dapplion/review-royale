@@ -82,6 +82,7 @@ async fn main() -> anyhow::Result<()> {
             "/api/backfill/:owner/:name",
             get(routes::backfill::status).post(routes::backfill::trigger),
         )
+        .route("/api/recalculate", axum::routing::post(routes::recalc::trigger))
         .with_state(state);
 
     // Build full router with static file serving

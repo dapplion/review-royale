@@ -120,3 +120,30 @@ pub async fn count_by_user(
 
     Ok(row.get::<i64, _>("count"))
 }
+
+/// List all reviews (for recalculation)
+pub async fn list_all(pool: &PgPool) -> Result<Vec<Review>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        SELECT id, pr_id, reviewer_id, github_id, state, body, comments_count, submitted_at
+        FROM reviews
+        ORDER BY submitted_at ASC
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| Review {
+            id: r.get("id"),
+            pr_id: r.get("pr_id"),
+            reviewer_id: r.get("reviewer_id"),
+            github_id: r.get("github_id"),
+            state: parse_review_state(r.get("state")),
+            body: r.get("body"),
+            comments_count: r.get("comments_count"),
+            submitted_at: r.get("submitted_at"),
+        })
+        .collect())
+}

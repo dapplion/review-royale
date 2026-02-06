@@ -64,12 +64,40 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 
 ## Scoring System
 
-### XP Awards
-- **Review submitted**: 10 XP base
-- **First review on PR**: +15 XP bonus
-- **Fast review** (<1 hour): +10 XP bonus
-- **Thorough review** (>3 comments): +5 XP per comment
-- **PR merged** (author): 20 XP
+### What is a "Review"?
+
+**A review = one session of work reviewing a specific version of code.**
+
+Individual GitHub review events (comments, approvals) are grouped into **review sessions** based on:
+
+#### A review session ENDS when:
+1. **Author pushes new commits** → new code to review = new work
+2. **24-hour gap** between reviewer's comments → came back fresh = new session
+
+#### What does NOT create a new review:
+- Multiple comments within same session (even if 30 min apart)
+- Quick back-and-forth in same hour
+- Re-requesting changes on same commits
+
+#### Minimum threshold for a review to count:
+- At least **1 substantive comment** (>20 chars) OR **state change** (approved/changes_requested)
+- **Rubber stamp rejections**: Pure "approved" with 0 comments and <1 min review time = **no credit**
+
+### XP Formula
+
+**Per review session:**
+- **Base**: 10 XP (one meaningful review session)
+- **Comments**: +5 XP per substantive comment (>20 chars)
+- **Fast review**: +10 XP if reviewed <1 hour after commits pushed
+- **Thorough**: +5 XP if >5 comments in session
+- **Deep review**: +10 XP if >10 comments in session
+
+**No "first reviewer" bonus** — we don't reward racing. Multiple reviewers can all get the fast bonus.
+
+**Example:**
+- Author pushes commits at 10:00 AM
+- Alice reviews at 10:30 AM with 3 comments → 10 base + 15 comments + 10 fast = **35 XP**
+- Bob reviews at 10:45 AM with 7 comments → 10 base + 35 comments + 10 fast + 5 thorough = **60 XP**
 
 ### Levels
 ```
@@ -174,8 +202,9 @@ Level = floor(sqrt(XP / 100)) + 1
 ## TODOs Before Launch
 
 ### XP Recalculation
-- [ ] Add "reset and recalculate all XP" function
+- [x] Add "reset and recalculate all XP" function
   - Zeros all user XP
-  - Recomputes from all reviews in database
+  - Recomputes from all reviews in database grouped into sessions
   - Use when XP formula changes or before production launch
-- [ ] Run full DB reset + recalculate with final formula before launch
+  - Available at `POST /api/recalculate`
+- [ ] Run full DB reset + recalculate with final formula (after commit fetching backfill)

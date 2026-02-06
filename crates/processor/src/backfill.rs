@@ -188,6 +188,31 @@ impl Backfiller {
             db::prs::update_timestamps(&self.pool, db_pr.id, pr.merged_at, pr.closed_at).await?;
         }
 
+        // Fetch commits for review session boundaries
+        match self.client.fetch_commits(owner, repo_name, pr.number).await {
+            Ok(commits) => {
+                for commit in commits {
+                    // Try to match commit author to a user (best effort)
+                    let author_id = None; // TODO: match by git email if needed
+                    let _ = db::commits::insert(
+                        &self.pool,
+                        db_pr.id,
+                        &commit.sha,
+                        author_id,
+                        commit.commit.author.date,
+                        Some(&commit.commit.message),
+                    )
+                    .await;
+                }
+            }
+            Err(github::client::ClientError::RateLimited { retry_after }) => {
+                return Err(BackfillError::RateLimited(retry_after));
+            }
+            Err(e) => {
+                debug!("Failed to fetch commits for PR #{}: {}", pr.number, e);
+            }
+        }
+
         // Fetch reviews
         let reviews = match self.client.list_reviews(owner, repo_name, pr.number).await {
             Ok(r) => r,

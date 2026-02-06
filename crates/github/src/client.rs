@@ -75,6 +75,24 @@ pub struct GithubReviewComment {
     pub pull_request_review_id: Option<i64>,
 }
 
+/// Commit as returned by GitHub API
+#[derive(Debug, Deserialize)]
+pub struct GithubCommit {
+    pub sha: String,
+    pub commit: GithubCommitDetail,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubCommitDetail {
+    pub author: GithubCommitAuthor,
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GithubCommitAuthor {
+    pub date: DateTime<Utc>,
+}
+
 impl GitHubClient {
     pub fn new(token: Option<String>) -> Self {
         let client = reqwest::Client::new();
@@ -234,6 +252,20 @@ impl GitHubClient {
 
         info!("Fetched {} PRs total for {}/{}", all_prs.len(), owner, repo);
         Ok(all_prs)
+    }
+
+    /// Fetch commits for a PR
+    pub async fn fetch_commits(
+        &self,
+        owner: &str,
+        repo: &str,
+        pr_number: i32,
+    ) -> Result<Vec<GithubCommit>, ClientError> {
+        let url = format!(
+            "https://api.github.com/repos/{}/{}/pulls/{}/commits",
+            owner, repo, pr_number
+        );
+        self.get_paginated(&url, 100).await
     }
 }
 
