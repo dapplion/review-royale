@@ -13,7 +13,7 @@ pub async fn handle(
     pool: &PgPool,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let parts: Vec<&str> = command.split_whitespace().collect();
-    
+
     match parts.first() {
         Some(&"leaderboard") | Some(&"lb") => leaderboard(ctx, msg, pool).await,
         Some(&"stats") => {
@@ -22,7 +22,8 @@ pub async fn handle(
         }
         Some(&"help") => help(ctx, msg).await,
         _ => {
-            msg.reply(&ctx.http, "Unknown command. Try `!rr help`").await?;
+            msg.reply(&ctx.http, "Unknown command. Try `!rr help`")
+                .await?;
             Ok(())
         }
     }
@@ -39,12 +40,13 @@ async fn leaderboard(
     let entries = db::leaderboard::get_leaderboard(pool, None, since, 10).await?;
 
     if entries.is_empty() {
-        msg.reply(&ctx.http, "No reviews yet! Get reviewing! 🔍").await?;
+        msg.reply(&ctx.http, "No reviews yet! Get reviewing! 🔍")
+            .await?;
         return Ok(());
     }
 
     let mut response = String::from("👑 **Review Royale Leaderboard** (Last 30 days)\n\n");
-    
+
     for entry in entries {
         let medal = match entry.rank {
             1 => "🥇",
@@ -52,14 +54,10 @@ async fn leaderboard(
             3 => "🥉",
             _ => "  ",
         };
-        
+
         response.push_str(&format!(
             "{} **#{}** {} — {} reviews (Level {})\n",
-            medal,
-            entry.rank,
-            entry.user.login,
-            entry.stats.reviews_given,
-            entry.user.level
+            medal, entry.rank, entry.user.login, entry.stats.reviews_given, entry.user.level
         ));
     }
 
@@ -83,7 +81,8 @@ async fn stats(
     let user = match db::users::get_by_login(pool, username).await? {
         Some(u) => u,
         None => {
-            msg.reply(&ctx.http, format!("User `{}` not found", username)).await?;
+            msg.reply(&ctx.http, format!("User `{}` not found", username))
+                .await?;
             return Ok(());
         }
     };
@@ -104,7 +103,8 @@ async fn stats(
         user.level,
         user.xp,
         reviews,
-        rank.map(|r| format!("#{}", r)).unwrap_or_else(|| "Unranked".to_string()),
+        rank.map(|r| format!("#{}", r))
+            .unwrap_or_else(|| "Unranked".to_string()),
         achievements.len()
     );
 

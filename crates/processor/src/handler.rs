@@ -1,9 +1,9 @@
 //! Webhook event handler
 
 use common::models::{PrState, ReviewState};
-use github::{WebhookPayload, PullRequestEvent, PullRequestReviewEvent};
+use github::{PullRequestEvent, PullRequestReviewEvent, WebhookPayload};
 use sqlx::PgPool;
-use tracing::{info, debug, warn};
+use tracing::{debug, info, warn};
 
 use crate::achievements::AchievementChecker;
 use crate::scores::ScoreCalculator;
@@ -58,10 +58,7 @@ impl EventHandler {
     async fn handle_pull_request(&self, event: PullRequestEvent) -> Result<(), common::Error> {
         info!(
             "PR #{} in {}: {} by {}",
-            event.number,
-            event.repository.full_name,
-            event.action,
-            event.pull_request.user.login
+            event.number, event.repository.full_name, event.action, event.pull_request.user.login
         );
 
         // Upsert repository
@@ -200,7 +197,7 @@ impl EventHandler {
             db::prs::set_first_review(&self.pool, pr.id, submitted_at)
                 .await
                 .map_err(|e| common::Error::Database(e.to_string()))?;
-            
+
             info!(
                 "First review on PR #{} by {} (took {:?})",
                 pr.number,
@@ -214,11 +211,13 @@ impl EventHandler {
         db::users::add_xp(&self.pool, reviewer.id, xp)
             .await
             .map_err(|e| common::Error::Database(e.to_string()))?;
-        
+
         info!("Awarded {} XP to {} for review", xp, reviewer.login);
 
         // Check for achievements
-        self.achievement_checker.check_reviewer(&reviewer.id).await?;
+        self.achievement_checker
+            .check_reviewer(&reviewer.id)
+            .await?;
 
         Ok(())
     }

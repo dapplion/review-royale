@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::sync::Arc;
 
 use crate::state::AppState;
-use common::models::{User, UserStats, UserAchievement};
+use common::models::{User, UserAchievement, UserStats};
 
 #[derive(Serialize)]
 pub struct UserProfile {
@@ -28,7 +28,7 @@ pub async fn get(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
-    
+
     Ok(Json(user))
 }
 

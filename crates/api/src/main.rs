@@ -1,10 +1,10 @@
 //! Review Royale API Server
 
 use axum::{
-    Router,
-    routing::{get, post},
     extract::State,
     http::StatusCode,
+    routing::{get, post},
+    Router,
 };
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -20,13 +20,13 @@ use state::AppState;
 async fn main() -> anyhow::Result<()> {
     // Load .env file
     dotenvy::dotenv().ok();
-    
+
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
                 .add_directive("review_royale=debug".parse()?)
-                .add_directive("api=debug".parse()?)
+                .add_directive("api=debug".parse()?),
         )
         .init();
 
@@ -34,35 +34,43 @@ async fn main() -> anyhow::Result<()> {
 
     // Load configuration
     let config = common::Config::from_env();
-    
+
     // Connect to database
     let pool = db::create_pool(&config.database_url).await?;
-    
+
     // Run migrations
     db::run_migrations(&pool).await?;
-    
+
     // Create app state
     let state = Arc::new(AppState::new(config.clone(), pool));
-    
+
     // Build router
     let app = Router::new()
         .route("/", get(routes::health::root))
         .route("/health", get(routes::health::health))
         .route("/api/repos", get(routes::repos::list))
         .route("/api/repos/:owner/:name", get(routes::repos::get))
-        .route("/api/repos/:owner/:name/leaderboard", get(routes::leaderboard::get))
+        .route(
+            "/api/repos/:owner/:name/leaderboard",
+            get(routes::leaderboard::get),
+        )
         .route("/api/users/:username", get(routes::users::get))
         .route("/api/users/:username/stats", get(routes::users::stats))
         .route("/api/leaderboard", get(routes::leaderboard::global))
         .route("/webhooks/github", post(routes::webhooks::github))
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
     info!("🚀 Listening on {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
 

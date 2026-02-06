@@ -6,7 +6,7 @@ use sha2::Sha256;
 type HmacSha256 = Hmac<Sha256>;
 
 /// Verify the webhook signature from GitHub
-/// 
+///
 /// `signature` is the value of the `X-Hub-Signature-256` header
 /// `secret` is your webhook secret
 /// `body` is the raw request body
@@ -39,7 +39,7 @@ mod tests {
     fn test_verify_signature() {
         let secret = "test-secret";
         let body = b"test body";
-        
+
         // Generate a valid signature
         let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
         mac.update(body);

@@ -65,7 +65,7 @@ pub async fn github(
     }
 
     info!("Successfully processed {} event", event_type);
-    
+
     Ok(Json(WebhookResponse {
         ok: true,
         message: None,

@@ -44,11 +44,11 @@ pub async fn global(
     Query(query): Query<LeaderboardQuery>,
 ) -> Result<Json<Vec<LeaderboardEntry>>, StatusCode> {
     let since = period_to_since(&query.period);
-    
+
     let leaderboard = db::leaderboard::get_leaderboard(&state.pool, None, since, query.limit)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     Ok(Json(leaderboard))
 }
 
@@ -63,10 +63,11 @@ pub async fn get(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     let since = period_to_since(&query.period);
-    
-    let leaderboard = db::leaderboard::get_leaderboard(&state.pool, Some(repo.id), since, query.limit)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
+    let leaderboard =
+        db::leaderboard::get_leaderboard(&state.pool, Some(repo.id), since, query.limit)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     Ok(Json(leaderboard))
 }

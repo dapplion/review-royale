@@ -1,9 +1,9 @@
 //! GitHub API client and webhook handling
 
 pub mod events;
-pub mod webhooks;
 pub mod verify;
+pub mod webhooks;
 
 pub use events::*;
-pub use webhooks::WebhookPayload;
 pub use verify::verify_signature;
+pub use webhooks::WebhookPayload;

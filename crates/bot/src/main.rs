@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()
                 .add_directive("review_royale=debug".parse()?)
-                .add_directive("bot=debug".parse()?)
+                .add_directive("bot=debug".parse()?),
         )
         .init();
 
@@ -61,9 +61,7 @@ async fn main() -> anyhow::Result<()> {
     // Load configuration
     let config = common::Config::from_env();
 
-    let token = config
-        .discord_token
-        .expect("DISCORD_TOKEN must be set");
+    let token = config.discord_token.expect("DISCORD_TOKEN must be set");
 
     // Connect to database
     let pool = db::create_pool(&config.database_url).await?;
@@ -76,9 +74,7 @@ async fn main() -> anyhow::Result<()> {
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client = Client::builder(&token, intents)
-        .event_handler(bot)
-        .await?;
+    let mut client = Client::builder(&token, intents).event_handler(bot).await?;
 
     // Store pool in client data
     {

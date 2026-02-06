@@ -20,7 +20,7 @@ impl WebhookPayload {
     /// Parse a webhook payload from the event type and body
     pub fn parse(event_type: &str, body: &[u8]) -> Result<Self, serde_json::Error> {
         debug!("Parsing webhook: {}", event_type);
-        
+
         match event_type {
             "ping" => {
                 let v: Value = serde_json::from_slice(body)?;

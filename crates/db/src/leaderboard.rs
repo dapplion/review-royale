@@ -1,9 +1,9 @@
 //! Leaderboard queries
 
+use chrono::{DateTime, Utc};
 use common::models::{LeaderboardEntry, User, UserStats};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Get the review leaderboard for a time period
 pub async fn get_leaderboard(

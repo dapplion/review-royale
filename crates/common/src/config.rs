@@ -20,8 +20,9 @@ impl Config {
     /// Load configuration from environment variables
     pub fn from_env() -> Self {
         Self {
-            database_url: env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/review_royale".to_string()),
+            database_url: env::var("DATABASE_URL").unwrap_or_else(|_| {
+                "postgres://postgres:postgres@localhost:5432/review_royale".to_string()
+            }),
             redis_url: env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
             github_app_id: env::var("GITHUB_APP_ID").ok(),

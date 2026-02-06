@@ -2,8 +2,8 @@
 
 use chrono::{Duration, Utc};
 use sqlx::PgPool;
-use uuid::Uuid;
 use tracing::info;
+use uuid::Uuid;
 
 /// Achievement definitions
 pub mod defs {
@@ -74,7 +74,11 @@ impl AchievementChecker {
     }
 
     /// Try to unlock an achievement, returns true if newly unlocked
-    async fn try_unlock(&self, user_id: &Uuid, achievement_id: &str) -> Result<bool, common::Error> {
+    async fn try_unlock(
+        &self,
+        user_id: &Uuid,
+        achievement_id: &str,
+    ) -> Result<bool, common::Error> {
         // Check if already has it
         let has = db::achievements::has_achievement(&self.pool, *user_id, achievement_id)
             .await
@@ -89,7 +93,10 @@ impl AchievementChecker {
             .await
             .map_err(|e| common::Error::Database(e.to_string()))?;
 
-        info!("🏆 Achievement unlocked: {} for user {:?}", achievement_id, user_id);
+        info!(
+            "🏆 Achievement unlocked: {} for user {:?}",
+            achievement_id, user_id
+        );
         Ok(true)
     }
 }

@@ -107,10 +107,7 @@ pub async fn list_recent_unlocks(
 }
 
 /// Count how many users have a specific achievement
-pub async fn count_unlocks(
-    pool: &PgPool,
-    achievement_id: &str,
-) -> Result<i64, sqlx::Error> {
+pub async fn count_unlocks(pool: &PgPool, achievement_id: &str) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
         r#"
         SELECT COUNT(*) as count

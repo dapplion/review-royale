@@ -5,9 +5,8 @@ use common::models::PullRequest;
 
 /// Calculate time to first review in seconds
 pub fn time_to_first_review(pr: &PullRequest) -> Option<i64> {
-    pr.first_review_at.map(|first_review| {
-        (first_review - pr.created_at).num_seconds()
-    })
+    pr.first_review_at
+        .map(|first_review| (first_review - pr.created_at).num_seconds())
 }
 
 /// Calculate if a review was "fast" (under 4 hours)

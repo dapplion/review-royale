@@ -1,8 +1,8 @@
 //! Event processing and metrics computation
 
-pub mod metrics;
 pub mod achievements;
-pub mod scores;
 pub mod handler;
+pub mod metrics;
+pub mod scores;
 
 pub use handler::EventHandler;
