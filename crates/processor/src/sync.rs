@@ -80,7 +80,10 @@ impl SyncService {
         for repo in repos {
             info!("Syncing {}/{}", repo.owner, repo.name);
 
-            match backfiller.backfill_repo(&repo.owner, &repo.name, false).await {
+            match backfiller
+                .backfill_repo(&repo.owner, &repo.name, false)
+                .await
+            {
                 Ok(progress) => {
                     info!(
                         "Synced {}/{}: {} PRs, {} reviews",

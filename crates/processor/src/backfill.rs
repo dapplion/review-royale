@@ -56,7 +56,10 @@ impl Backfiller {
         name: &str,
         force: bool,
     ) -> Result<BackfillProgress, BackfillError> {
-        info!("Starting backfill for {}/{} (force: {})", owner, name, force);
+        info!(
+            "Starting backfill for {}/{} (force: {})",
+            owner, name, force
+        );
 
         // Get or create the repository
         let gh_repo = self.client.get_repo(owner, name).await?;
