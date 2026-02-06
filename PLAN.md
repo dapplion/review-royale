@@ -144,8 +144,11 @@ Level = floor(sqrt(XP / 100)) + 1
   - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
   - [ ] Global leaderboard at `/` (all repos combined)
   - [ ] Repo selector/switcher
-  - [ ] **SECURITY**: Only allow `sigp/*` repos for now
-  - [ ] **SECURITY**: If repo is private, return 404 / show nothing (prevent leaking internal repos)
+  - [ ] **SECURITY**: Access control by org:
+    - `sigp/*` repos → show leaderboard (allowed)
+    - Private repos → 404 / show nothing (prevent leaking internal repos)
+    - Other orgs (public) → "Request access" page with link to Lion's Twitter
+    - Goal: open to all orgs eventually, closed for now for safety
 - [ ] Test coverage
 - [ ] Error handling improvements
 
