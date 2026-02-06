@@ -5,7 +5,6 @@ use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use sqlx::PgPool;
-use std::sync::Arc;
 use tracing::{error, info};
 
 mod commands;

@@ -1,8 +1,6 @@
 //! Review Royale API Server
 
 use axum::{
-    extract::State,
-    http::StatusCode,
     routing::{get, post},
     Router,
 };
