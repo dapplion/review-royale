@@ -9,10 +9,6 @@ pub struct HealthResponse {
     version: &'static str,
 }
 
-pub async fn root() -> &'static str {
-    "👑 Review Royale"
-}
-
 pub async fn health() -> Json<HealthResponse> {
     Json(HealthResponse {
         status: "ok",
