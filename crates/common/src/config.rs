@@ -7,6 +7,7 @@ use std::env;
 pub struct Config {
     pub database_url: String,
     pub redis_url: String,
+    pub github_token: Option<String>,
     pub github_app_id: Option<String>,
     pub github_private_key_path: Option<String>,
     pub github_webhook_secret: Option<String>,
@@ -25,6 +26,7 @@ impl Config {
             }),
             redis_url: env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
+            github_token: env::var("GITHUB_TOKEN").ok(),
             github_app_id: env::var("GITHUB_APP_ID").ok(),
             github_private_key_path: env::var("GITHUB_PRIVATE_KEY_PATH").ok(),
             github_webhook_secret: env::var("GITHUB_WEBHOOK_SECRET").ok(),

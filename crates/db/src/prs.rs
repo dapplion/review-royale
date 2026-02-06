@@ -69,6 +69,34 @@ pub async fn upsert(
     })
 }
 
+/// Update merged_at and closed_at timestamps
+pub async fn update_timestamps(
+    pool: &PgPool,
+    pr_id: Uuid,
+    merged_at: Option<DateTime<Utc>>,
+    closed_at: Option<DateTime<Utc>>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE pull_requests
+        SET merged_at = COALESCE($2, merged_at),
+            closed_at = COALESCE($3, closed_at),
+            state = CASE 
+                WHEN $2 IS NOT NULL THEN 'merged'
+                WHEN $3 IS NOT NULL THEN 'closed'
+                ELSE state
+            END
+        WHERE id = $1
+        "#,
+    )
+    .bind(pr_id)
+    .bind(merged_at)
+    .bind(closed_at)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Record first review time
 pub async fn set_first_review(
     pool: &PgPool,

@@ -26,9 +26,12 @@ pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
 pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     info!("Running migrations...");
 
-    // Read and execute migration file
-    let migration_sql = include_str!("../../../migrations/001_initial.sql");
-    sqlx::raw_sql(migration_sql).execute(pool).await?;
+    // Read and execute migration files in order
+    let migration_001 = include_str!("../../../migrations/001_initial.sql");
+    sqlx::raw_sql(migration_001).execute(pool).await?;
+
+    let migration_002 = include_str!("../../../migrations/002_sync_tracking.sql");
+    sqlx::raw_sql(migration_002).execute(pool).await?;
 
     info!("Migrations complete");
     Ok(())

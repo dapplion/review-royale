@@ -84,6 +84,24 @@ pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Option<User>, sqlx::Er
     }))
 }
 
+/// Get or create a user, returning whether they were newly created
+pub async fn upsert_returning_created(
+    pool: &PgPool,
+    github_id: i64,
+    login: &str,
+    avatar_url: Option<&str>,
+) -> Result<(User, bool), sqlx::Error> {
+    // Check if user exists first
+    let existing = sqlx::query("SELECT id FROM users WHERE github_id = $1")
+        .bind(github_id)
+        .fetch_optional(pool)
+        .await?;
+
+    let created = existing.is_none();
+    let user = upsert(pool, github_id, login, avatar_url).await?;
+    Ok((user, created))
+}
+
 /// Add XP to a user and potentially level up
 pub async fn add_xp(pool: &PgPool, user_id: Uuid, xp: i64) -> Result<User, sqlx::Error> {
     // Simple leveling: level = floor(sqrt(xp / 100)) + 1

@@ -55,6 +55,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/users/:username", get(routes::users::get))
         .route("/api/users/:username/stats", get(routes::users::stats))
         .route("/api/leaderboard", get(routes::leaderboard::global))
+        .route(
+            "/api/backfill/:owner/:name",
+            get(routes::backfill::status).post(routes::backfill::trigger),
+        )
         .route("/webhooks/github", post(routes::webhooks::github))
         .layer(
             CorsLayer::new()

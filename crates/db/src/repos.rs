@@ -1,5 +1,6 @@
 //! Repository queries
 
+use chrono::{DateTime, Utc};
 use common::models::Repository;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
@@ -78,4 +79,31 @@ pub async fn list(pool: &PgPool) -> Result<Vec<Repository>, sqlx::Error> {
             created_at: r.get("created_at"),
         })
         .collect())
+}
+
+/// Get last sync timestamp for a repository
+pub async fn get_last_synced_at(
+    pool: &PgPool,
+    repo_id: Uuid,
+) -> Result<Option<DateTime<Utc>>, sqlx::Error> {
+    let row = sqlx::query("SELECT last_synced_at FROM repositories WHERE id = $1")
+        .bind(repo_id)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(row.and_then(|r| r.get("last_synced_at")))
+}
+
+/// Update last sync timestamp for a repository
+pub async fn set_last_synced_at(
+    pool: &PgPool,
+    repo_id: Uuid,
+    synced_at: DateTime<Utc>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE repositories SET last_synced_at = $1 WHERE id = $2")
+        .bind(synced_at)
+        .bind(repo_id)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
