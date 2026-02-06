@@ -14,15 +14,14 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   GitHub     │───▶│   Backfill   │───▶│   Database   │  │
+│  │   GitHub     │───▶│     Sync     │───▶│   Database   │  │
 │  │     API      │    │   Service    │    │  (Postgres)  │  │
 │  └──────────────┘    └──────────────┘    └──────────────┘  │
-│                             │                    │          │
-│                      ┌──────┴───────┐            │          │
-│                      │ Sync Service │            ▼          │
-│                      │ (every N hr) │    ┌──────────────┐  │
-│                      └──────────────┘    │  Processor   │  │
-│                                          │  (XP/Achv)   │  │
+│                       │ incremental │            │          │
+│                       │ from cursor │            ▼          │
+│                       │ every N hr  │    ┌──────────────┐  │
+│                       └──────────────┘    │  Processor   │  │
+│                                          │  (Sessions)  │  │
 │  ┌──────────────┐    ┌──────────────┐    └──────────────┘  │
 │  │ Mattermost   │◀───│     API      │◀──────────┘          │
 │  │     Bot      │    │   Server     │                       │
@@ -35,6 +34,20 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 │                      └──────────────┘                       │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Sync Strategy (Simplified)
+
+No separate "backfill" concept - just **one sync operation**:
+
+```
+sync(repo, from: last_synced_at || start_date, to: now)
+```
+
+- **First run**: `from = 365 days ago` (no cursor yet)
+- **Subsequent runs**: `from = last_synced_at`
+- **After success**: `last_synced_at = now`
+
+Incremental, stateful, simple.
 
 ## Crates
 
