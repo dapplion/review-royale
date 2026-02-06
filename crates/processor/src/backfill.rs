@@ -287,7 +287,7 @@ impl Backfiller {
                     // Award XP
                     let xp = self
                         .score_calculator
-                        .calculate_review_xp(&db_pr, submitted_at);
+                        .calculate_review_xp(&db_pr, submitted_at, comments_count);
                     let _ = db::users::add_xp(&self.pool, reviewer.id, xp).await;
                 }
                 Err(e) => {

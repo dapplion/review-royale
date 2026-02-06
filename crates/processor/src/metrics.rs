@@ -9,10 +9,10 @@ pub fn time_to_first_review(pr: &PullRequest) -> Option<i64> {
         .map(|first_review| (first_review - pr.created_at).num_seconds())
 }
 
-/// Calculate if a review was "fast" (under 4 hours)
+/// Calculate if a review was "fast" (under 1 hour)
 pub fn is_fast_review(pr_created: DateTime<Utc>, review_submitted: DateTime<Utc>) -> bool {
     let diff = review_submitted - pr_created;
-    diff < Duration::hours(4)
+    diff < Duration::hours(1)
 }
 
 /// Calculate if this was the first review on a PR
