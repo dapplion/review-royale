@@ -23,3 +23,10 @@ build/
 
 # Logs
 *.log
+
+# Screenshots
+*.png
+
+# Package files
+package.json
+package-lock.json

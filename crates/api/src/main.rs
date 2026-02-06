@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
             "/api/backfill/:owner/:name",
             get(routes::backfill::status).post(routes::backfill::trigger),
         )
-        .nest_service("/", ServeDir::new("static").append_index_html_on_directories(true))
+        .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
