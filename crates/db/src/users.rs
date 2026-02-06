@@ -1,6 +1,7 @@
 //! User queries
 
-use common::models::User;
+use chrono::{DateTime, Utc};
+use common::models::{User, UserStats};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
@@ -130,4 +131,89 @@ pub async fn add_xp(pool: &PgPool, user_id: Uuid, xp: i64) -> Result<User, sqlx:
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
     })
+}
+
+/// Get user stats including reviews, comments, first reviews
+pub async fn get_stats(
+    pool: &PgPool,
+    user_id: Uuid,
+    since: DateTime<Utc>,
+) -> Result<UserStats, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        WITH first_reviews AS (
+            SELECT DISTINCT ON (r.pr_id) r.reviewer_id
+            FROM reviews r
+            WHERE r.submitted_at >= $2
+            ORDER BY r.pr_id, r.submitted_at ASC
+        )
+        SELECT
+            COUNT(r.id)::int as reviews_given,
+            COALESCE(SUM(r.comments_count), 0)::int as comments_written,
+            COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = $1), 0)::int as first_reviews,
+            COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1)::int as prs_authored,
+            COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1 AND pr.merged_at IS NOT NULL)::int as prs_merged
+        FROM users u
+        LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $2
+        LEFT JOIN pull_requests pr ON pr.id = r.pr_id
+        WHERE u.id = $1
+        "#,
+    )
+    .bind(user_id)
+    .bind(since)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(UserStats {
+        reviews_given: row.get("reviews_given"),
+        first_reviews: row.get("first_reviews"),
+        comments_written: row.get("comments_written"),
+        prs_authored: row.get("prs_authored"),
+        prs_merged: row.get("prs_merged"),
+        ..Default::default()
+    })
+}
+
+/// Get weekly activity for a user (reviews per week)
+pub async fn get_weekly_activity(
+    pool: &PgPool,
+    user_id: Uuid,
+    weeks: i32,
+) -> Result<Vec<(String, i32, i64)>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        WITH weeks AS (
+            SELECT generate_series(
+                date_trunc('week', NOW() - ($2 || ' weeks')::interval),
+                date_trunc('week', NOW()),
+                '1 week'::interval
+            ) as week_start
+        )
+        SELECT
+            to_char(w.week_start, 'Mon DD') as week,
+            COUNT(r.id)::int as reviews,
+            COALESCE(SUM(10 + r.comments_count * 5), 0)::bigint as xp
+        FROM weeks w
+        LEFT JOIN reviews r ON r.reviewer_id = $1 
+            AND r.submitted_at >= w.week_start 
+            AND r.submitted_at < w.week_start + '1 week'::interval
+        GROUP BY w.week_start
+        ORDER BY w.week_start ASC
+        "#,
+    )
+    .bind(user_id)
+    .bind(weeks)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            (
+                r.get::<String, _>("week"),
+                r.get::<i32, _>("reviews"),
+                r.get::<i64, _>("xp"),
+            )
+        })
+        .collect())
 }

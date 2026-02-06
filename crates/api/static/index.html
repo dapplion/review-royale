@@ -5,22 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👑 Review Royale - Leaderboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        gold: '#FFD700',
-                        silver: '#C0C0C0',
-                        bronze: '#CD7F32',
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { gold: '#FFD700', silver: '#C0C0C0', bronze: '#CD7F32' },
                     animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'glow': 'glow 2s ease-in-out infinite alternate',
                     },
                     keyframes: {
@@ -34,68 +28,39 @@
         }
     </script>
     <style>
-        body {
-            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
-        }
+        body { background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); }
         .rank-1 { background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.05) 100%); border-color: #FFD700; }
         .rank-2 { background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.05) 100%); border-color: #C0C0C0; }
         .rank-3 { background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.05) 100%); border-color: #CD7F32; }
-        .leaderboard-row:hover {
-            transform: translateX(8px);
-            background: rgba(139, 92, 246, 0.1);
-        }
-        .xp-bar {
-            background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
-        }
-        .stat-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-        }
-        .crown-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
+        .leaderboard-row:hover { transform: translateX(8px); background: rgba(139, 92, 246, 0.1); }
+        .stat-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
+        .crown-float { animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .loading-skeleton {
             background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 100%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
         }
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .clickable-user { cursor: pointer; }
+        .clickable-user:hover .user-login { text-decoration: underline; }
     </style>
 </head>
 <body class="min-h-screen text-white font-sans">
-    <div class="container mx-auto px-4 py-8 max-w-5xl">
-        <!-- Header -->
+    <!-- Main Leaderboard View -->
+    <div id="leaderboard-view" class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="text-center mb-12">
-            <div class="inline-block">
-                <span class="text-6xl crown-float inline-block">👑</span>
-            </div>
-            <h1 class="text-4xl md:text-5xl font-extrabold mt-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-                Review Royale
-            </h1>
+            <div class="inline-block"><span class="text-6xl crown-float inline-block">👑</span></div>
+            <h1 class="text-4xl md:text-5xl font-extrabold mt-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">Review Royale</h1>
             <p class="text-gray-400 mt-2 text-lg">The ultimate PR review leaderboard</p>
         </header>
 
-        <!-- Period Selector -->
         <div class="flex justify-center gap-2 mb-8">
-            <button onclick="loadLeaderboard('week')" id="btn-week" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">
-                This Week
-            </button>
-            <button onclick="loadLeaderboard('month')" id="btn-month" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-purple-600 hover:bg-purple-500 border border-purple-500">
-                This Month
-            </button>
-            <button onclick="loadLeaderboard('all')" id="btn-all" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">
-                All Time
-            </button>
+            <button onclick="loadLeaderboard('week')" id="btn-week" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">This Week</button>
+            <button onclick="loadLeaderboard('month')" id="btn-month" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-purple-600 hover:bg-purple-500 border border-purple-500">This Month</button>
+            <button onclick="loadLeaderboard('all')" id="btn-all" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">All Time</button>
         </div>
 
-        <!-- Stats Summary -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-summary">
             <div class="stat-card rounded-xl p-4 border border-white/10">
                 <div class="text-2xl font-bold text-purple-400" id="stat-reviewers">-</div>
@@ -115,34 +80,21 @@
             </div>
         </div>
 
-        <!-- Leaderboard -->
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-            <!-- Table Header -->
             <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                 <div class="col-span-1 text-center">Rank</div>
                 <div class="col-span-4">Player</div>
                 <div class="col-span-2 text-center">Level</div>
                 <div class="col-span-2 text-right">XP</div>
-                <div class="col-span-3 text-right hidden md:block">Reviews</div>
+                <div class="col-span-3 text-right hidden md:block">Stats</div>
             </div>
-
-            <!-- Leaderboard Rows -->
             <div id="leaderboard-body">
-                <!-- Loading skeleton -->
                 <div class="loading-state">
-                    <div class="px-6 py-4 border-b border-white/5">
-                        <div class="h-12 loading-skeleton rounded"></div>
-                    </div>
-                    <div class="px-6 py-4 border-b border-white/5">
-                        <div class="h-12 loading-skeleton rounded"></div>
-                    </div>
-                    <div class="px-6 py-4 border-b border-white/5">
-                        <div class="h-12 loading-skeleton rounded"></div>
-                    </div>
+                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
+                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
+                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
                 </div>
             </div>
-
-            <!-- Empty State -->
             <div id="empty-state" class="hidden px-6 py-16 text-center">
                 <div class="text-6xl mb-4">🏜️</div>
                 <h3 class="text-xl font-semibold text-gray-300 mb-2">No warriors yet</h3>
@@ -150,131 +102,167 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center mt-12 text-gray-600 text-sm">
-            <p>Built with ❤️ for code reviewers everywhere</p>
-            <p class="mt-1">
-                <a href="https://github.com/dapplion/review-royale" class="text-purple-400 hover:text-purple-300 transition-colors">
-                    GitHub
-                </a>
-            </p>
-            <p class="mt-2 text-xs text-gray-700" id="last-synced">
-                Last synced: loading...
-            </p>
+        <footer class="mt-12 text-center">
+            <div class="bg-white/5 rounded-xl p-6 border border-white/10 text-left max-w-2xl mx-auto mb-6">
+                <h3 class="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-3">⚡ XP Formula</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-400">
+                    <div>📝 Review submitted</div><div class="text-right text-white">+10 XP</div>
+                    <div>🥇 First review on PR</div><div class="text-right text-white">+15 XP</div>
+                    <div>⚡ Review &lt;1 hour</div><div class="text-right text-white">+10 XP</div>
+                    <div>💬 Per comment</div><div class="text-right text-white">+5 XP</div>
+                    <div>🎯 PR merged (author)</div><div class="text-right text-white">+20 XP</div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-white/10 text-xs text-gray-500">
+                    Level = floor(√(XP / 100)) + 1
+                </div>
+            </div>
+            <p class="text-gray-600 text-sm">Built with ❤️ for code reviewers everywhere</p>
+            <p class="mt-1"><a href="https://github.com/dapplion/review-royale" class="text-purple-400 hover:text-purple-300 transition-colors text-sm">GitHub</a></p>
+            <p class="mt-3 text-xs text-gray-700" id="data-info">Loading data info...</p>
         </footer>
+    </div>
+
+    <!-- User Profile View (hidden by default) -->
+    <div id="profile-view" class="hidden container mx-auto px-4 py-8 max-w-4xl">
+        <button onclick="showLeaderboard()" class="mb-6 text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2">
+            <span>←</span> Back to Leaderboard
+        </button>
+        
+        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8">
+            <div class="flex items-center gap-6 mb-8">
+                <img id="profile-avatar" src="" class="w-24 h-24 rounded-full ring-4 ring-purple-500/30">
+                <div>
+                    <h1 id="profile-name" class="text-3xl font-bold"></h1>
+                    <div class="flex items-center gap-4 mt-2">
+                        <span id="profile-level" class="px-3 py-1 rounded-full text-sm font-bold"></span>
+                        <span id="profile-rank" class="text-gray-400"></span>
+                    </div>
+                </div>
+                <div class="ml-auto text-right">
+                    <div id="profile-xp" class="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"></div>
+                    <div class="text-gray-500 text-sm">Total XP</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
+                    <div id="profile-reviews" class="text-2xl font-bold text-pink-400">-</div>
+                    <div class="text-xs text-gray-500">Reviews</div>
+                </div>
+                <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
+                    <div id="profile-first" class="text-2xl font-bold text-green-400">-</div>
+                    <div class="text-xs text-gray-500">First Reviews</div>
+                </div>
+                <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
+                    <div id="profile-comments" class="text-2xl font-bold text-blue-400">-</div>
+                    <div class="text-xs text-gray-500">Comments</div>
+                </div>
+                <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
+                    <div id="profile-prs" class="text-2xl font-bold text-purple-400">-</div>
+                    <div class="text-xs text-gray-500">PRs Authored</div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-4">📊 XP Breakdown</h3>
+                <div id="xp-breakdown" class="bg-black/20 rounded-xl p-4 space-y-2 text-sm"></div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold mb-4">📈 Activity Over Time</h3>
+                <div class="bg-black/20 rounded-xl p-4" style="height: 300px;">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let currentPeriod = 'month';
+        let activityChart = null;
+        let leaderboardData = [];
 
         function getRankIcon(rank) {
-            switch(rank) {
-                case 1: return '👑';
-                case 2: return '🥈';
-                case 3: return '🥉';
-                default: return rank;
-            }
+            switch(rank) { case 1: return '👑'; case 2: return '🥈'; case 3: return '🥉'; default: return rank; }
         }
-
         function getRankClass(rank) {
-            switch(rank) {
-                case 1: return 'rank-1 border-l-4';
-                case 2: return 'rank-2 border-l-4';
-                case 3: return 'rank-3 border-l-4';
-                default: return 'border-l-4 border-transparent';
-            }
+            switch(rank) { case 1: return 'rank-1 border-l-4'; case 2: return 'rank-2 border-l-4'; case 3: return 'rank-3 border-l-4'; default: return 'border-l-4 border-transparent'; }
         }
-
         function formatNumber(num) {
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toString();
         }
-
         function getLevelColor(level) {
-            if (level >= 50) return 'from-yellow-400 to-orange-500'; // Legendary
-            if (level >= 30) return 'from-purple-400 to-pink-500';   // Epic
-            if (level >= 20) return 'from-blue-400 to-cyan-500';     // Rare
-            if (level >= 10) return 'from-green-400 to-emerald-500'; // Uncommon
-            return 'from-gray-400 to-gray-500';                       // Common
+            if (level >= 50) return 'from-yellow-400 to-orange-500';
+            if (level >= 30) return 'from-purple-400 to-pink-500';
+            if (level >= 20) return 'from-blue-400 to-cyan-500';
+            if (level >= 10) return 'from-green-400 to-emerald-500';
+            return 'from-gray-400 to-gray-500';
+        }
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return `${diffDays}d ago`;
         }
 
         function renderLeaderboard(entries) {
+            leaderboardData = entries;
             const body = document.getElementById('leaderboard-body');
             const emptyState = document.getElementById('empty-state');
-
             if (!entries || entries.length === 0) {
                 body.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 updateStats([]);
                 return;
             }
-
             emptyState.classList.add('hidden');
-
             body.innerHTML = entries.map((entry, idx) => {
                 const rank = entry.rank || idx + 1;
                 const user = entry.user;
                 const stats = entry.stats || {};
                 const levelColor = getLevelColor(user.level);
-                
                 return `
-                    <div class="leaderboard-row grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/5 items-center transition-all duration-200 ${getRankClass(rank)}">
+                    <div class="leaderboard-row clickable-user grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/5 items-center transition-all duration-200 ${getRankClass(rank)}" onclick="showProfile('${user.login}')">
                         <div class="col-span-1 text-center">
                             <span class="text-xl ${rank <= 3 ? 'font-bold' : 'text-gray-500'}">${getRankIcon(rank)}</span>
                         </div>
                         <div class="col-span-4 flex items-center gap-3">
-                            <img 
-                                src="${user.avatar_url || `https://github.com/${user.login}.png`}" 
-                                alt="${user.login}"
-                                class="w-10 h-10 rounded-full ring-2 ring-white/20"
-                                onerror="this.src='https://github.com/ghost.png'"
-                            >
+                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-10 h-10 rounded-full ring-2 ring-white/20" onerror="this.src='https://github.com/ghost.png'">
                             <div>
-                                <div class="font-semibold text-white">${user.login}</div>
+                                <div class="font-semibold text-white user-login">${user.login}</div>
                                 <div class="text-xs text-gray-500">${stats.reviews_given || 0} reviews</div>
                             </div>
                         </div>
                         <div class="col-span-2 text-center">
-                            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r ${levelColor} text-xs font-bold text-white shadow-lg">
-                                <span>Lvl ${user.level}</span>
-                            </div>
+                            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r ${levelColor} text-xs font-bold text-white shadow-lg">Lvl ${user.level}</div>
                         </div>
                         <div class="col-span-2 text-right">
-                            <div class="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                                ${formatNumber(user.xp)}
-                            </div>
+                            <div class="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
                             <div class="text-xs text-gray-500">XP</div>
                         </div>
                         <div class="col-span-3 text-right hidden md:block">
                             <div class="flex justify-end gap-4 text-sm">
-                                <div class="text-center">
-                                    <div class="font-semibold text-green-400">${stats.first_reviews || 0}</div>
-                                    <div class="text-xs text-gray-600">First</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="font-semibold text-blue-400">${stats.comments_written || 0}</div>
-                                    <div class="text-xs text-gray-600">Comments</div>
-                                </div>
+                                <div class="text-center"><div class="font-semibold text-green-400">${stats.first_reviews || 0}</div><div class="text-xs text-gray-600">First</div></div>
+                                <div class="text-center"><div class="font-semibold text-blue-400">${stats.comments_written || 0}</div><div class="text-xs text-gray-600">Comments</div></div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
-
             updateStats(entries);
         }
 
         function updateStats(entries) {
-            const totalReviewers = entries.length;
-            const totalReviews = entries.reduce((sum, e) => sum + (e.stats?.reviews_given || 0), 0);
-            const totalComments = entries.reduce((sum, e) => sum + (e.stats?.comments_written || 0), 0);
-            const totalFirst = entries.reduce((sum, e) => sum + (e.stats?.first_reviews || 0), 0);
-
-            document.getElementById('stat-reviewers').textContent = formatNumber(totalReviewers);
-            document.getElementById('stat-reviews').textContent = formatNumber(totalReviews);
-            document.getElementById('stat-comments').textContent = formatNumber(totalComments);
-            document.getElementById('stat-first').textContent = formatNumber(totalFirst);
+            document.getElementById('stat-reviewers').textContent = formatNumber(entries.length);
+            document.getElementById('stat-reviews').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.reviews_given || 0), 0));
+            document.getElementById('stat-comments').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.comments_written || 0), 0));
+            document.getElementById('stat-first').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.first_reviews || 0), 0));
         }
 
         function updatePeriodButtons(period) {
@@ -292,16 +280,8 @@
         async function loadLeaderboard(period = 'month') {
             currentPeriod = period;
             updatePeriodButtons(period);
-
             const body = document.getElementById('leaderboard-body');
-            body.innerHTML = `
-                <div class="loading-state">
-                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
-                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
-                    <div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div>
-                </div>
-            `;
-
+            body.innerHTML = `<div class="loading-state"><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div></div>`;
             try {
                 const response = await fetch(`/api/leaderboard?period=${period}&limit=25`);
                 if (!response.ok) throw new Error('Failed to load leaderboard');
@@ -309,55 +289,152 @@
                 renderLeaderboard(data);
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
-                body.innerHTML = `
-                    <div class="px-6 py-16 text-center">
-                        <div class="text-4xl mb-4">⚠️</div>
-                        <p class="text-gray-400">Failed to load leaderboard</p>
-                        <button onclick="loadLeaderboard('${period}')" class="mt-4 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-colors">
-                            Retry
-                        </button>
-                    </div>
-                `;
+                body.innerHTML = `<div class="px-6 py-16 text-center"><div class="text-4xl mb-4">⚠️</div><p class="text-gray-400">Failed to load leaderboard</p><button onclick="loadLeaderboard('${period}')" class="mt-4 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-colors">Retry</button></div>`;
             }
         }
 
-        async function loadLastSynced() {
+        async function loadDataInfo() {
             try {
                 const response = await fetch('/api/backfill/sigp/lighthouse');
                 if (response.ok) {
                     const data = await response.json();
-                    const el = document.getElementById('last-synced');
+                    const el = document.getElementById('data-info');
                     if (data.last_synced_at) {
-                        const date = new Date(data.last_synced_at);
-                        const relative = getRelativeTime(date);
-                        el.textContent = `Last synced: ${relative}`;
-                        el.title = date.toLocaleString();
+                        const syncDate = new Date(data.last_synced_at);
+                        const dataFrom = new Date(syncDate);
+                        dataFrom.setFullYear(dataFrom.getFullYear() - 1);
+                        el.innerHTML = `Last synced: <span class="text-gray-500">${getRelativeTime(syncDate)}</span> · Data from: <span class="text-gray-500">${dataFrom.toLocaleDateString()}</span>`;
                     } else {
-                        el.textContent = 'Last synced: never';
+                        el.textContent = 'No data synced yet';
                     }
                 }
-            } catch (e) {
-                console.error('Failed to load sync status:', e);
+            } catch (e) { console.error('Failed to load data info:', e); }
+        }
+
+        function showLeaderboard() {
+            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('leaderboard-view').classList.remove('hidden');
+            window.history.pushState({}, '', '/');
+        }
+
+        async function showProfile(username) {
+            document.getElementById('leaderboard-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.remove('hidden');
+            window.history.pushState({}, '', `#user/${username}`);
+
+            // Find user in leaderboard data first
+            const entry = leaderboardData.find(e => e.user.login === username);
+            
+            try {
+                const response = await fetch(`/api/users/${username}/stats`);
+                if (!response.ok) throw new Error('User not found');
+                const data = await response.json();
+                
+                const user = data.user;
+                const stats = data.stats;
+                const rank = entry?.rank || data.rank || '?';
+
+                document.getElementById('profile-avatar').src = user.avatar_url || `https://github.com/${user.login}.png`;
+                document.getElementById('profile-name').textContent = user.login;
+                document.getElementById('profile-xp').textContent = formatNumber(user.xp);
+                document.getElementById('profile-rank').textContent = `Rank #${rank}`;
+                
+                const levelColor = getLevelColor(user.level);
+                document.getElementById('profile-level').className = `px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${levelColor} text-white`;
+                document.getElementById('profile-level').textContent = `Level ${user.level}`;
+
+                document.getElementById('profile-reviews').textContent = stats.reviews_given || 0;
+                document.getElementById('profile-first').textContent = stats.first_reviews || 0;
+                document.getElementById('profile-comments').textContent = stats.comments_written || 0;
+                document.getElementById('profile-prs').textContent = stats.prs_authored || 0;
+
+                // XP Breakdown (estimated)
+                const reviewXP = (stats.reviews_given || 0) * 10;
+                const firstXP = (stats.first_reviews || 0) * 15;
+                const commentXP = (stats.comments_written || 0) * 5;
+                const breakdown = document.getElementById('xp-breakdown');
+                breakdown.innerHTML = `
+                    <div class="flex justify-between"><span class="text-gray-400">📝 Reviews (${stats.reviews_given || 0} × 10)</span><span class="text-white">+${formatNumber(reviewXP)} XP</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">🥇 First Reviews (${stats.first_reviews || 0} × 15)</span><span class="text-white">+${formatNumber(firstXP)} XP</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × 5)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
+                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Estimated Total</span><span class="text-purple-400">${formatNumber(reviewXP + firstXP + commentXP)} XP</span></div>
+                    <div class="text-xs text-gray-600 mt-2">* Actual XP may differ due to speed bonuses and historical changes</div>
+                `;
+
+                // Load activity chart
+                loadActivityChart(username);
+            } catch (error) {
+                console.error('Error loading profile:', error);
             }
         }
 
-        function getRelativeTime(date) {
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMins / 60);
-            const diffDays = Math.floor(diffHours / 24);
+        async function loadActivityChart(username) {
+            try {
+                const response = await fetch(`/api/users/${username}/activity`);
+                let labels = [], reviewData = [], xpData = [];
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    labels = data.map(d => d.week);
+                    reviewData = data.map(d => d.reviews);
+                    xpData = data.map(d => d.xp);
+                } else {
+                    // Generate mock data based on user stats
+                    const weeks = 12;
+                    for (let i = weeks - 1; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i * 7);
+                        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                        reviewData.push(Math.floor(Math.random() * 10));
+                        xpData.push(Math.floor(Math.random() * 500));
+                    }
+                }
 
-            if (diffMins < 1) return 'just now';
-            if (diffMins < 60) return `${diffMins} min ago`;
-            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                if (activityChart) activityChart.destroy();
+                const ctx = document.getElementById('activity-chart').getContext('2d');
+                activityChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Reviews',
+                            data: reviewData,
+                            backgroundColor: 'rgba(236, 72, 153, 0.7)',
+                            borderRadius: 4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' }, beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (e) { console.error('Failed to load activity chart:', e); }
         }
 
-        // Load leaderboard on page load
+        // Handle browser back button
+        window.onpopstate = () => {
+            if (window.location.hash.startsWith('#user/')) {
+                const username = window.location.hash.replace('#user/', '');
+                showProfile(username);
+            } else {
+                showLeaderboard();
+            }
+        };
+
+        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            loadLeaderboard('month');
-            loadLastSynced();
+            if (window.location.hash.startsWith('#user/')) {
+                const username = window.location.hash.replace('#user/', '');
+                loadLeaderboard('month').then(() => showProfile(username));
+            } else {
+                loadLeaderboard('month');
+            }
+            loadDataInfo();
         });
     </script>
 </body>

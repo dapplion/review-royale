@@ -20,6 +20,13 @@ pub struct UserProfile {
     pub rank: Option<i32>,
 }
 
+#[derive(Serialize)]
+pub struct WeeklyActivity {
+    pub week: String,
+    pub reviews: i32,
+    pub xp: i64,
+}
+
 pub async fn get(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
@@ -46,21 +53,16 @@ pub async fn stats(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Get rank
-    let since = Utc::now() - Duration::days(30);
+    // Get rank (all time for profile)
+    let since = Utc::now() - Duration::days(365 * 10);
     let rank = db::leaderboard::get_user_rank(&state.pool, user.id, None, since)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Get review count
-    let reviews_given = db::reviews::count_by_user(&state.pool, user.id, since)
+    // Get full user stats
+    let stats = db::users::get_stats(&state.pool, user.id, since)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let stats = UserStats {
-        reviews_given: reviews_given as i32,
-        ..Default::default()
-    };
 
     Ok(Json(UserProfile {
         user,
@@ -68,4 +70,25 @@ pub async fn stats(
         achievements,
         rank,
     }))
+}
+
+pub async fn activity(
+    State(state): State<Arc<AppState>>,
+    Path(username): Path<String>,
+) -> Result<Json<Vec<WeeklyActivity>>, StatusCode> {
+    let user = db::users::get_by_login(&state.pool, &username)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let activity = db::users::get_weekly_activity(&state.pool, user.id, 12)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let result: Vec<WeeklyActivity> = activity
+        .into_iter()
+        .map(|(week, reviews, xp)| WeeklyActivity { week, reviews, xp })
+        .collect();
+
+    Ok(Json(result))
 }

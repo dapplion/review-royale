@@ -72,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .route("/api/users/:username", get(routes::users::get))
         .route("/api/users/:username/stats", get(routes::users::stats))
+        .route("/api/users/:username/activity", get(routes::users::activity))
         .route("/api/leaderboard", get(routes::leaderboard::global))
         .route(
             "/api/backfill/:owner/:name",
