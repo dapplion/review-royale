@@ -47,7 +47,7 @@ pub async fn get_leaderboard(
             us.first_reviews
         FROM users u
         JOIN user_stats us ON us.id = u.id
-        ORDER BY us.reviews_given DESC, u.xp DESC
+        ORDER BY u.xp DESC, us.reviews_given DESC
         LIMIT $3
         "#,
     )
@@ -73,7 +73,7 @@ pub async fn get_leaderboard(
             };
             LeaderboardEntry {
                 rank: (idx + 1) as i32,
-                score: row.get::<i32, _>("reviews_given") as i64,
+                score: user.xp,
                 user,
                 stats: UserStats {
                     reviews_given: row.get("reviews_given"),
