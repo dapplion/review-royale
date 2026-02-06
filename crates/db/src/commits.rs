@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use common::models::Commit;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
 /// Insert a commit

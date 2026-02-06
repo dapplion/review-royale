@@ -265,7 +265,7 @@ impl GitHubClient {
             "https://api.github.com/repos/{}/{}/pulls/{}/commits",
             owner, repo, pr_number
         );
-        self.get_paginated(&url, 100).await
+        self.get(&url).await
     }
 }
 
