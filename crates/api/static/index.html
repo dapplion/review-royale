@@ -81,11 +81,11 @@
         </div>
 
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
-            <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-                <div class="col-span-1 text-center">Rank</div>
-                <div class="col-span-4">Player</div>
-                <div class="col-span-2 text-center">Level</div>
-                <div class="col-span-2 text-right">XP</div>
+            <div class="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-4 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                <div class="col-span-1 text-center">#</div>
+                <div class="col-span-5 md:col-span-4">Player</div>
+                <div class="col-span-3 md:col-span-2 text-center">Level</div>
+                <div class="col-span-3 md:col-span-2 text-right">XP</div>
                 <div class="col-span-3 text-right hidden md:block">Stats</div>
             </div>
             <div id="leaderboard-body">
@@ -229,22 +229,24 @@
                 const stats = entry.stats || {};
                 const levelColor = getLevelColor(user.level);
                 return `
-                    <div class="leaderboard-row clickable-user grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/5 items-center transition-all duration-200 ${getRankClass(rank)}" onclick="showProfile('${user.login}')">
+                    <div class="leaderboard-row clickable-user grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-4 border-b border-white/5 items-center transition-all duration-200 ${getRankClass(rank)}" onclick="showProfile('${user.login}')">
                         <div class="col-span-1 text-center">
-                            <span class="text-xl ${rank <= 3 ? 'font-bold' : 'text-gray-500'}">${getRankIcon(rank)}</span>
+                            <span class="text-lg md:text-xl ${rank <= 3 ? 'font-bold' : 'text-gray-500'}">${getRankIcon(rank)}</span>
                         </div>
-                        <div class="col-span-4 flex items-center gap-3">
-                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-10 h-10 rounded-full ring-2 ring-white/20" onerror="this.src='https://github.com/ghost.png'">
-                            <div>
-                                <div class="font-semibold text-white user-login">${user.login}</div>
+                        <div class="col-span-5 md:col-span-4 flex items-center gap-2 md:gap-3">
+                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-10 h-10 md:w-12 md:h-12 rounded-full ring-2 ring-white/20" onerror="this.src='https://github.com/ghost.png'">
+                            <div class="overflow-hidden">
+                                <div class="font-semibold text-white user-login text-sm md:text-base truncate">${user.login}</div>
                                 <div class="text-xs text-gray-500">${stats.reviews_given || 0} reviews</div>
                             </div>
                         </div>
-                        <div class="col-span-2 text-center">
-                            <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r ${levelColor} text-xs font-bold text-white shadow-lg">Lvl ${user.level}</div>
+                        <div class="col-span-3 md:col-span-2 text-center">
+                            <div class="inline-flex items-center gap-1 px-2 md:px-3 py-1 rounded-full bg-gradient-to-r ${levelColor} text-xs font-bold text-white shadow-lg">
+                                <span class="hidden md:inline">Lvl </span>${user.level}
+                            </div>
                         </div>
-                        <div class="col-span-2 text-right">
-                            <div class="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
+                        <div class="col-span-3 md:col-span-2 text-right">
+                            <div class="font-bold text-base md:text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
                             <div class="text-xs text-gray-500">XP</div>
                         </div>
                         <div class="col-span-3 text-right hidden md:block">
