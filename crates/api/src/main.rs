@@ -61,8 +61,8 @@ async fn main() -> anyhow::Result<()> {
     // Create app state
     let state = Arc::new(AppState::new(config.clone(), pool));
 
-    // Build router
-    let app = Router::new()
+    // Build API router with state
+    let api_router = Router::new()
         .route("/health", get(routes::health::health))
         .route("/api/repos", get(routes::repos::list))
         .route("/api/repos/:owner/:name", get(routes::repos::get))
@@ -77,6 +77,10 @@ async fn main() -> anyhow::Result<()> {
             "/api/backfill/:owner/:name",
             get(routes::backfill::status).post(routes::backfill::trigger),
         )
+        .with_state(state);
+
+    // Build full router with static file serving
+    let app = api_router
         .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
         .layer(
             CorsLayer::new()
@@ -84,8 +88,7 @@ async fn main() -> anyhow::Result<()> {
                 .allow_methods(Any)
                 .allow_headers(Any),
         )
-        .layer(TraceLayer::new_for_http())
-        .with_state(state);
+        .layer(TraceLayer::new_for_http());
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
