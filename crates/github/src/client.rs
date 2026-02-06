@@ -104,7 +104,9 @@ impl GitHubClient {
         if status == reqwest::StatusCode::NOT_FOUND {
             return Err(ClientError::NotFound(url.to_string()));
         }
-        if status == reqwest::StatusCode::FORBIDDEN || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        if status == reqwest::StatusCode::FORBIDDEN
+            || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+        {
             let retry_after = resp
                 .headers()
                 .get("retry-after")
@@ -183,19 +185,15 @@ impl GitHubClient {
         since: Option<DateTime<Utc>>,
         max_age_days: u32,
     ) -> Result<Vec<GithubPr>, ClientError> {
-        let cutoff = since.unwrap_or_else(|| {
-            Utc::now() - chrono::Duration::days(max_age_days as i64)
-        });
+        let cutoff =
+            since.unwrap_or_else(|| Utc::now() - chrono::Duration::days(max_age_days as i64));
 
         let mut all_prs = Vec::new();
         let mut page = 1u32;
         let per_page = 100u32;
 
         loop {
-            info!(
-                "Fetching PRs page {} for {}/{}",
-                page, owner, repo
-            );
+            info!("Fetching PRs page {} for {}/{}", page, owner, repo);
             let prs = self.list_prs(owner, repo, "all", page, per_page).await?;
 
             if prs.is_empty() {

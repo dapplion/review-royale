@@ -109,14 +109,12 @@ pub async fn status(
             }))
             .into_response()
         }
-        Ok(None) => {
-            Json(serde_json::json!({
-                "repo": format!("{}/{}", owner, name),
-                "tracked": false,
-                "last_synced_at": Option::<String>::None,
-            }))
-            .into_response()
-        }
+        Ok(None) => Json(serde_json::json!({
+            "repo": format!("{}/{}", owner, name),
+            "tracked": false,
+            "last_synced_at": Option::<String>::None,
+        }))
+        .into_response(),
         Err(e) => {
             error!("Failed to get repo status: {}", e);
             (
