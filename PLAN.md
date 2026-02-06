@@ -144,6 +144,8 @@ Level = floor(sqrt(XP / 100)) + 1
   - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
   - [ ] Global leaderboard at `/` (all repos combined)
   - [ ] Repo selector/switcher
+  - [ ] **SECURITY**: Only allow `sigp/*` repos for now
+  - [ ] **SECURITY**: If repo is private, return 404 / show nothing (prevent leaking internal repos)
 - [ ] Test coverage
 - [ ] Error handling improvements
 
