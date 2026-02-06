@@ -16,7 +16,9 @@ pub struct RecalcResponse {
     pub users_updated: usize,
 }
 
-pub async fn trigger(State(state): State<Arc<AppState>>) -> Result<Json<RecalcResponse>, StatusCode> {
+pub async fn trigger(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<RecalcResponse>, StatusCode> {
     info!("Recalculation triggered via API");
 
     let stats = processor::recalculate_all_xp(&state.pool)

@@ -104,11 +104,11 @@ pub fn calculate_session_xp(
     commit_before_session: Option<DateTime<Utc>>,
 ) -> i64 {
     // Check minimum threshold: at least 1 comment or state change
-    let has_state_change = session
-        .reviews
-        .iter()
-        .any(|r| r.state == common::models::ReviewState::Approved || r.state == common::models::ReviewState::ChangesRequested);
-    
+    let has_state_change = session.reviews.iter().any(|r| {
+        r.state == common::models::ReviewState::Approved
+            || r.state == common::models::ReviewState::ChangesRequested
+    });
+
     if session.total_comments == 0 && !has_state_change {
         // Rubber stamp - no credit
         return 0;

@@ -1,7 +1,7 @@
 //! XP recalculation based on new session-based rules
 
 use sqlx::PgPool;
-use tracing::{info, warn};
+use tracing::info;
 use uuid::Uuid;
 
 use crate::sessions::{calculate_session_xp, group_reviews_into_sessions};
@@ -35,7 +35,10 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
             .push(review);
     }
 
-    info!("Grouped reviews into {} unique (pr, reviewer) pairs", review_groups.len());
+    info!(
+        "Grouped reviews into {} unique (pr, reviewer) pairs",
+        review_groups.len()
+    );
 
     // Step 4: Process each group into sessions and award XP
     let total_reviews_count: usize = review_groups.values().map(|v| v.len()).sum();
