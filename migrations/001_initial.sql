@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS repositories (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_repos_owner_name ON repositories(owner, name);
+CREATE INDEX IF NOT EXISTS idx_repos_owner_name ON repositories(owner, name);
 
 -- Users
 CREATE TABLE IF NOT EXISTS users (
@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_users_login ON users(login);
-CREATE INDEX idx_users_xp ON users(xp DESC);
+CREATE INDEX IF NOT EXISTS idx_users_login ON users(login);
+CREATE INDEX IF NOT EXISTS idx_users_xp ON users(xp DESC);
 
 -- Pull Requests
 CREATE TABLE IF NOT EXISTS pull_requests (
@@ -41,10 +41,10 @@ CREATE TABLE IF NOT EXISTS pull_requests (
     closed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_prs_repo ON pull_requests(repo_id);
-CREATE INDEX idx_prs_author ON pull_requests(author_id);
-CREATE INDEX idx_prs_created ON pull_requests(created_at DESC);
-CREATE INDEX idx_prs_state ON pull_requests(state);
+CREATE INDEX IF NOT EXISTS idx_prs_repo ON pull_requests(repo_id);
+CREATE INDEX IF NOT EXISTS idx_prs_author ON pull_requests(author_id);
+CREATE INDEX IF NOT EXISTS idx_prs_created ON pull_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_prs_state ON pull_requests(state);
 
 -- Reviews
 CREATE TABLE IF NOT EXISTS reviews (
@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS reviews (
     submitted_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_reviews_pr ON reviews(pr_id);
-CREATE INDEX idx_reviews_reviewer ON reviews(reviewer_id);
-CREATE INDEX idx_reviews_submitted ON reviews(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_pr ON reviews(pr_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_submitted ON reviews(submitted_at DESC);
 
 -- Achievements
 CREATE TABLE IF NOT EXISTS achievements (
@@ -80,8 +80,8 @@ CREATE TABLE IF NOT EXISTS user_achievements (
     PRIMARY KEY (user_id, achievement_id)
 );
 
-CREATE INDEX idx_user_achievements_user ON user_achievements(user_id);
-CREATE INDEX idx_user_achievements_unlocked ON user_achievements(unlocked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_unlocked ON user_achievements(unlocked_at DESC);
 
 -- Seasons
 CREATE TABLE IF NOT EXISTS seasons (
