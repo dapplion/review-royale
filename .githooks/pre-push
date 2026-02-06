@@ -1,0 +1,21 @@
+#!/bin/sh
+# Pre-push hook: run cargo fmt check
+
+# Skip if cargo not available
+if ! command -v cargo >/dev/null 2>&1; then
+    echo "⚠️  cargo not found, skipping fmt check"
+    exit 0
+fi
+
+echo "🔍 Running cargo fmt --check..."
+
+if ! cargo fmt --all -- --check; then
+    echo ""
+    echo "❌ Formatting check failed!"
+    echo "Run 'cargo fmt --all' to fix formatting issues."
+    echo ""
+    exit 1
+fi
+
+echo "✅ Formatting check passed!"
+exit 0

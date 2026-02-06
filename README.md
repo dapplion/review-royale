@@ -68,6 +68,9 @@ curl "http://localhost:3000/api/leaderboard"
 ## Development
 
 ```bash
+# Set up git hooks (runs cargo fmt check on push)
+git config core.hooksPath .githooks
+
 # Run tests
 cargo test
 
