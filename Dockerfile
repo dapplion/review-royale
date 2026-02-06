@@ -3,11 +3,12 @@ FROM rust:1-bookworm as builder
 
 WORKDIR /app
 
-# Copy manifests
+# Copy manifests and migrations
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+COPY migrations ./migrations
 
-# Build dependencies (this layer will be cached)
+# Build
 RUN cargo build --release --package api
 
 # Runtime stage
@@ -23,7 +24,7 @@ WORKDIR /app
 COPY --from=builder /app/target/release/review-royale-api /app/review-royale-api
 
 # Copy migrations
-COPY migrations ./migrations
+COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 3000
 
