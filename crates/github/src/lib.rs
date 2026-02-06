@@ -1,13 +1,7 @@
-//! GitHub API client and webhook handling
+//! GitHub API client for fetching PRs and reviews
 
 pub mod client;
-pub mod events;
-pub mod verify;
-pub mod webhooks;
 
 pub use client::{
-    GitHubClient, GithubPr, GithubRepo, GithubReview, GithubReviewComment, GithubUser,
+    ClientError, GitHubClient, GithubPr, GithubRepo, GithubReview, GithubReviewComment, GithubUser,
 };
-pub use events::*;
-pub use verify::verify_signature;
-pub use webhooks::WebhookPayload;

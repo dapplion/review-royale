@@ -59,7 +59,6 @@ async fn main() -> anyhow::Result<()> {
             "/api/backfill/:owner/:name",
             get(routes::backfill::status).post(routes::backfill::trigger),
         )
-        .route("/webhooks/github", post(routes::webhooks::github))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

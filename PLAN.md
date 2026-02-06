@@ -1,385 +1,163 @@
-# Review Royale - Development Plan
+# Review Royale - Architecture & Plan
 
-> Gamified PR review analytics for GitHub teams. Make code review competitive, fun, and visible.
+## Overview
 
-## Vision
+Gamified PR review analytics for GitHub repositories. Tracks review activity via GitHub API polling, awards XP, achievements, and maintains leaderboards.
 
-Transform PR reviews from a chore into a sport. Points, achievements, leaderboards, seasons, trash talk. A full gamification layer on top of GitHub's review system.
-
----
-
-## Phase 1: Foundation (Week 1)
-
-### 1.1 Project Setup
-- [x] Create repo structure
-- [ ] Set up Rust workspace with crates
-- [ ] Docker Compose for local dev (Postgres, Redis)
-- [ ] Basic CI (cargo check, fmt, clippy, test)
-- [ ] README with project overview
-
-### 1.2 GitHub App
-- [ ] Register GitHub App on github.com
-- [ ] Implement webhook receiver (Axum)
-- [ ] Handle webhook signature verification
-- [ ] Parse relevant events:
-  - `pull_request` (opened, closed, merged, reopened)
-  - `pull_request_review` (submitted, edited, dismissed)
-  - `pull_request_review_comment` (created, edited, deleted)
-  - `issue_comment` (for PR comments)
-  - `check_run` / `check_suite` (CI status)
-  - `push` (commits to PR branch)
-
-### 1.3 Data Model & Storage
-- [ ] Design PostgreSQL schema
-- [ ] Set up migrations (sqlx or refinery)
-- [ ] Core tables:
-  - `repositories` - tracked repos
-  - `users` - GitHub users (denormalized from events)
-  - `pull_requests` - PR metadata + timestamps
-  - `reviews` - review events with timing
-  - `review_comments` - individual comments
-  - `ci_runs` - CI status changes
-  - `metrics_daily` - pre-aggregated daily stats
-  - `achievements` - achievement definitions
-  - `user_achievements` - unlocked achievements
-  - `seasons` - season definitions
-  - `season_scores` - per-user per-season scores
-
-### 1.4 Event Processing
-- [ ] Event queue (Redis streams or in-process for MVP)
-- [ ] Processor that:
-  - Stores raw events
-  - Updates PR state machine
-  - Computes real-time metrics
-  - Checks achievement triggers
-
----
-
-## Phase 2: Metrics Engine (Week 1-2)
-
-### Core Metrics
-
-| Metric | Computation | Storage |
-|--------|-------------|---------|
-| **Time to First Review** | `first_review.created_at - pr.created_at` | Per PR, aggregated per user |
-| **Review Response Time** | Time between review request and review | Per reviewer per PR |
-| **Author Turnaround** | Time for author to respond after review | Per author per PR |
-| **CI Fix Time** | Time from CI failure to passing after review | Per PR |
-| **Review Depth** | Comments count, files reviewed, suggestions | Per review |
-| **Review Volume** | Reviews submitted per time period | Daily/weekly/monthly per user |
-| **Stale PR Detection** | PRs with no activity > threshold | Continuous |
-| **Review Coverage** | % of PRs user reviewed vs total | Per user per period |
-
-### Derived Scores
+## Architecture
 
 ```
-XP = (reviews * 10) 
-   + (first_reviews * 5)           // bonus for being first
-   + (fast_reviews * 3)            // < 4 hours
-   + (deep_reviews * depth_score)  // based on comments/suggestions
-   + (achievement_bonuses)
+┌─────────────────────────────────────────────────────────────┐
+│                        Review Royale                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │   GitHub     │───▶│   Backfill   │───▶│   Database   │  │
+│  │     API      │    │   Service    │    │  (Postgres)  │  │
+│  └──────────────┘    └──────────────┘    └──────────────┘  │
+│                                                   │          │
+│                                                   ▼          │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
+│  │   Discord    │◀───│     API      │◀───│  Processor   │  │
+│  │     Bot      │    │   Server     │    │  (XP/Achv)   │  │
+│  └──────────────┘    └──────────────┘    └──────────────┘  │
+│                             │                               │
+│                             ▼                               │
+│                      ┌──────────────┐                       │
+│                      │   Frontend   │                       │
+│                      │  (SvelteKit) │                       │
+│                      └──────────────┘                       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Aggregation Jobs
-- [ ] Hourly: Update leaderboard caches
-- [ ] Daily: Compute daily rollups, check daily achievements
-- [ ] Weekly: Weekly digest data, streak checks
-- [ ] Monthly: Season standings, monthly achievements
+## Data Flow
 
----
+1. **Backfill Service** polls GitHub API for PRs and reviews
+2. **Processor** computes XP, checks achievement conditions
+3. **Database** stores all state (users, PRs, reviews, achievements)
+4. **API Server** exposes REST endpoints for leaderboard, stats
+5. **Discord Bot** sends notifications, weekly digests, roasts
+6. **Frontend** displays leaderboard and user profiles
 
-## Phase 3: API (Week 2)
+## Crates
 
-### REST Endpoints
+| Crate | Purpose |
+|-------|---------|
+| `common` | Shared types, config, errors |
+| `db` | PostgreSQL queries and migrations |
+| `github` | GitHub API client |
+| `processor` | Backfill, XP calculation, achievements |
+| `api` | REST API server (Axum) |
+| `bot` | Discord bot (Serenity) |
 
+## API Endpoints
+
+### Public
+- `GET /health` - Health check
+- `GET /api/leaderboard` - Global leaderboard
+- `GET /api/repos` - List tracked repositories
+- `GET /api/repos/:owner/:name` - Repository details
+- `GET /api/repos/:owner/:name/leaderboard` - Repo-specific leaderboard
+- `GET /api/users/:username` - User profile
+- `GET /api/users/:username/stats` - User statistics
+
+### Admin
+- `GET /api/backfill/:owner/:name` - Check backfill status
+- `POST /api/backfill/:owner/:name` - Trigger backfill (params: `max_days`)
+
+## Scoring System
+
+### XP Awards
+- **Review submitted**: 10 XP base
+- **First review on PR**: +15 XP bonus
+- **Fast review** (<1 hour): +10 XP bonus
+- **Thorough review** (>3 comments): +5 XP per comment
+- **PR merged** (author): 20 XP
+
+### Levels
 ```
-GET  /api/health
-GET  /api/repos
-GET  /api/repos/:owner/:repo/stats
-GET  /api/repos/:owner/:repo/prs
-GET  /api/repos/:owner/:repo/prs/:number
-GET  /api/repos/:owner/:repo/leaderboard
-GET  /api/users/:username
-GET  /api/users/:username/stats
-GET  /api/users/:username/achievements
-GET  /api/users/:username/reviews
-GET  /api/seasons
-GET  /api/seasons/:id/leaderboard
-GET  /api/achievements
-```
-
-### WebSocket
-- Real-time leaderboard updates
-- Live PR activity feed
-- Achievement unlock notifications
-
-### Auth
-- GitHub OAuth for users viewing their own detailed stats
-- Public endpoints for leaderboards (no auth)
-
----
-
-## Phase 4: Frontend (Week 2-3)
-
-### Tech Stack
-- SvelteKit (fast, fun, good DX)
-- TailwindCSS
-- Chart.js or Recharts for visualizations
-- Deployed to Vercel/Cloudflare Pages
-
-### Pages
-
-1. **Home / Leaderboard**
-   - Current season standings
-   - Top reviewers (week/month/all-time)
-   - Recent activity feed
-   - Stale PR wall of shame
-
-2. **User Profile**
-   - Avatar, stats, level, XP
-   - Achievement showcase
-   - Review history
-   - Personal records
-   - Rivalries (most reviewed/reviewed-by)
-
-3. **PR Detail**
-   - Timeline visualization
-   - Time metrics breakdown
-   - Participants and their contribution
-
-4. **Repo Dashboard**
-   - Overall health metrics
-   - Review velocity trends
-   - Team comparison
-   - Bottleneck identification
-
-5. **Achievements**
-   - All achievements (locked/unlocked)
-   - Rarity stats
-   - Recent unlocks across team
-
-6. **Season Archive**
-   - Past seasons
-   - Historical leaderboards
-   - Season MVPs
-
----
-
-## Phase 5: Bot (Week 3)
-
-### Discord Bot
-
-**Commands:**
-- `/leaderboard` - Current standings
-- `/stats @user` - User stats
-- `/pr <number>` - PR status
-- `/stale` - List stale PRs
-- `/achievements` - Recent unlocks
-- `/roast @user` - Generate playful roast based on stats
-
-**Automated Posts:**
-- Weekly digest (Monday morning)
-- Achievement unlocks (as they happen)
-- Stale PR alerts (configurable threshold)
-- Season end ceremony
-
-**Personality:**
-- Snarky, playful, competitive
-- Uses memes and emoji liberally
-- Roasts slow reviewers (gently)
-- Celebrates achievements enthusiastically
-
-### GitHub Bot (stretch)
-- Comment on PRs with review stats
-- Label PRs based on staleness
-- Auto-request reviewers based on load balancing
-
----
-
-## Phase 6: Advanced Features (Week 4+)
-
-### AI-Powered Review Quality
-- Use LLM to analyze review comments
-- Score: superficial vs substantive
-- Detect: nitpicks vs architectural feedback
-- Track: suggestions that led to changes
-
-### Meme Generation
-- DALL-E / Stable Diffusion integration
-- Generate memes for:
-  - Stale PRs
-  - Achievement unlocks
-  - Weekly MVPs
-  - Rivalry matchups
-
-### Notifications
-- Email digests (optional)
-- Slack integration
-- Custom webhooks
-
-### Multi-Repo Support
-- Org-wide leaderboards
-- Cross-repo achievements
-- Team groupings
-
----
-
-## Technical Decisions
-
-### Why Rust?
-- Lighthouse team knows it
-- Fast, reliable, good for long-running services
-- Strong typing catches bugs early
-- Axum is excellent for web services
-
-### Why PostgreSQL?
-- Mature, reliable
-- Great for relational data + JSON
-- Good aggregation support
-- Easy to self-host or use managed
-
-### Why Redis?
-- Fast caching for leaderboards
-- Pub/sub for real-time features
-- Simple queue for event processing
-- Session storage
-
-### Why SvelteKit?
-- Less boilerplate than React
-- Great performance
-- Fun to write
-- Good for dashboards
-
----
-
-## Repo Structure
-
-```
-review-royale/
-├── Cargo.toml                 # Workspace manifest
-├── Cargo.lock
-├── README.md
-├── PLAN.md                    # This file
-├── LICENSE
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── docker-compose.yml         # Local dev stack
-├── crates/
-│   ├── common/                # Shared types, utils
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── models.rs      # Domain models
-│   │       ├── config.rs      # Configuration
-│   │       └── error.rs       # Error types
-│   ├── db/                    # Database layer
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── migrations/
-│   │       ├── repos.rs
-│   │       ├── users.rs
-│   │       ├── prs.rs
-│   │       ├── reviews.rs
-│   │       └── achievements.rs
-│   ├── github/                # GitHub API & webhooks
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── webhooks.rs    # Webhook parsing
-│   │       ├── events.rs      # Event types
-│   │       ├── client.rs      # GitHub API client
-│   │       └── verify.rs      # Signature verification
-│   ├── processor/             # Event processing & metrics
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── metrics.rs     # Metric computation
-│   │       ├── achievements.rs # Achievement checks
-│   │       ├── scores.rs      # XP/scoring
-│   │       └── aggregator.rs  # Rollup jobs
-│   ├── api/                   # HTTP API server
-│   │   ├── Cargo.toml
-│   │   └── src/
-│   │       ├── main.rs
-│   │       ├── routes/
-│   │       │   ├── mod.rs
-│   │       │   ├── health.rs
-│   │       │   ├── repos.rs
-│   │       │   ├── users.rs
-│   │       │   ├── leaderboard.rs
-│   │       │   └── webhooks.rs
-│   │       ├── auth.rs
-│   │       └── ws.rs          # WebSocket handler
-│   └── bot/                   # Discord bot
-│       ├── Cargo.toml
-│       └── src/
-│           ├── main.rs
-│           ├── commands/
-│           ├── scheduled.rs   # Scheduled posts
-│           └── personality.rs # Message generation
-├── web/                       # SvelteKit frontend
-│   ├── package.json
-│   ├── svelte.config.js
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── lib/
-│   │   └── app.html
-│   └── static/
-└── migrations/                # SQL migrations
-    ├── 001_initial.sql
-    └── ...
+Level = floor(sqrt(XP / 100)) + 1
 ```
 
----
+| Level | XP Required |
+|-------|-------------|
+| 1 | 0 |
+| 2 | 100 |
+| 3 | 400 |
+| 4 | 900 |
+| 5 | 1,600 |
+| 10 | 8,100 |
+
+### Achievements
+
+| ID | Name | Description | XP | Rarity |
+|----|------|-------------|-----|--------|
+| `first_review` | First Blood | Submit your first review | 50 | Common |
+| `review_10` | Getting Started | Submit 10 reviews | 100 | Common |
+| `review_50` | Reviewer | Submit 50 reviews | 250 | Uncommon |
+| `review_100` | Centurion | Submit 100 reviews | 500 | Rare |
+| `speed_demon` | Speed Demon | Review a PR within 1 hour (10x) | 200 | Uncommon |
+| `night_owl` | Night Owl | Submit 10 reviews after midnight | 150 | Uncommon |
+| `review_streak_7` | On Fire | Review PRs 7 days in a row | 300 | Rare |
+
+## Backfill Strategy
+
+1. **Initial run**: Fetch PRs from last 365 days
+2. **Incremental**: Track `last_synced_at` per repo, only fetch updated PRs
+3. **Rate limiting**: Respect GitHub's 5000 req/hr, exponential backoff on 403
+4. **Caching**: Store sync cursor to resume on failure
+
+## Test Plan
+
+### Unit Tests
+- **github**: API client mocking, pagination, error handling
+- **db**: CRUD operations, leaderboard queries, idempotency
+- **processor**: XP formulas, achievement triggers, backfill dedup
+
+### Integration Tests
+- Backfill flow (mock GitHub → DB assertions)
+- API endpoints (test server → JSON responses)
+- Full flow (backfill → XP → leaderboard)
+
+### Test Infrastructure
+- Real Postgres in CI (already configured)
+- `wiremock` for GitHub API mocking
+- Transaction rollback for test isolation
+
+## Deployment
+
+- **Platform**: Fly.io
+- **Database**: Fly Postgres
+- **CI/CD**: GitHub Actions (auto-deploy on main)
 
 ## Milestones
 
-### M1: Webhook Ingestion (3 days)
-- GitHub App receiving events
-- Events stored in PostgreSQL
-- Basic health endpoint
-- Deployed somewhere (fly.io)
+### M1: Core Backend ✅
+- [x] Database schema
+- [x] GitHub API client
+- [x] Backfill service
+- [x] XP calculation
+- [x] REST API
 
-### M2: Basic Metrics (3 days)
-- Time to first review computed
-- Review count per user
-- Simple leaderboard endpoint
+### M2: Polish (Current)
+- [ ] Comprehensive test coverage
+- [ ] Production deployment
+- [ ] Backfill sigp/lighthouse
 
-### M3: Frontend MVP (4 days)
-- Leaderboard page
-- User profile with basic stats
-- Deployed to Vercel
+### M3: Discord Bot
+- [ ] Leaderboard command
+- [ ] Weekly digest
+- [ ] Achievement notifications
+- [ ] Roast command
 
-### M4: Bot MVP (3 days)
-- Discord bot running
-- `/leaderboard` command
-- Weekly digest posting
+### M4: Frontend
+- [ ] SvelteKit app
+- [ ] Leaderboard page
+- [ ] User profiles
+- [ ] Repository stats
 
-### M5: Achievements (3 days)
-- Achievement system implemented
-- 10 initial achievements
-- Unlock notifications
-
-### M6: Polish & Launch (ongoing)
-- More metrics
-- More achievements
-- Better visualizations
-- Team feedback integration
-
----
-
-## Open Questions
-
-1. **Hosting**: Fly.io? Railway? Self-hosted on a VPS?
-2. **Domain**: review-royale.dev? Something else?
-3. **Discord server**: Use Lighthouse's existing or dedicated?
-4. **Initial repos**: Start with just sigp/lighthouse?
-5. **Historical data**: Backfill from GitHub API or start fresh?
-
----
-
-## Let's Ship It 🚀
-
-Starting with M1: Webhook ingestion. The foundation everything else builds on.
+### M5: Advanced Features
+- [ ] Seasons (monthly/quarterly resets)
+- [ ] Review quality scoring
+- [ ] Team leaderboards
+- [ ] Custom achievements
