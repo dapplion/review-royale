@@ -24,7 +24,7 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 │                      └──────────────┘    │  Processor   │  │
 │                                          │  (XP/Achv)   │  │
 │  ┌──────────────┐    ┌──────────────┐    └──────────────┘  │
-│  │   Discord    │◀───│     API      │◀──────────┘          │
+│  │ Mattermost   │◀───│     API      │◀──────────┘          │
 │  │     Bot      │    │   Server     │                       │
 │  └──────────────┘    └──────────────┘                       │
 │                             │                               │
@@ -45,7 +45,7 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 | `github` | GitHub API client |
 | `processor` | Backfill, sync, XP calculation, achievements |
 | `api` | REST API server (Axum) + static frontend |
-| `bot` | Discord bot (Serenity) — skeleton only |
+| `bot` | Mattermost bot — skeleton only |
 
 ## API Endpoints
 
@@ -148,7 +148,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [ ] Quality score per comment
 - [ ] Quality-weighted XP bonuses
 
-### M6: Discord Bot
+### M6: Mattermost Bot
 - [ ] Leaderboard command
 - [ ] Weekly digest
 - [ ] Achievement notifications
