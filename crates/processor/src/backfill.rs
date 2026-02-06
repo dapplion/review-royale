@@ -1,13 +1,12 @@
 //! Backfill historical data from GitHub API
 
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use common::models::{PrState, ReviewState};
-use github::{GitHubClient, GithubPr, GithubReview};
+use github::{GitHubClient, GithubPr};
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::{debug, info, warn};
 
-use crate::achievements::AchievementChecker;
 use crate::scores::ScoreCalculator;
 
 #[derive(Error, Debug)]
@@ -34,7 +33,6 @@ pub struct BackfillProgress {
 pub struct Backfiller {
     pool: PgPool,
     client: GitHubClient,
-    achievement_checker: AchievementChecker,
     score_calculator: ScoreCalculator,
     max_age_days: u32,
 }
@@ -45,7 +43,6 @@ impl Backfiller {
         Self {
             pool: pool.clone(),
             client,
-            achievement_checker: AchievementChecker::new(pool.clone()),
             score_calculator: ScoreCalculator::new(pool),
             max_age_days,
         }
@@ -96,7 +93,10 @@ impl Backfiller {
                     progress.users_created += new_users;
                 }
                 Err(BackfillError::RateLimited(retry_after)) => {
-                    warn!("Rate limited, stopping backfill. Retry after {} seconds", retry_after);
+                    warn!(
+                        "Rate limited, stopping backfill. Retry after {} seconds",
+                        retry_after
+                    );
                     // Save progress before stopping
                     db::repos::set_last_synced_at(&self.pool, repo.id, sync_start).await?;
                     return Err(BackfillError::RateLimited(retry_after));
@@ -109,7 +109,7 @@ impl Backfiller {
             progress.prs_processed += 1;
 
             // Log progress every 10 PRs
-            if progress.prs_processed % 10 == 0 {
+            if progress.prs_processed.is_multiple_of(10) {
                 info!(
                     "Progress: {}/{} PRs, {} reviews",
                     progress.prs_processed, progress.prs_total, progress.reviews_processed
@@ -247,7 +247,9 @@ impl Backfiller {
                     }
 
                     // Award XP
-                    let xp = self.score_calculator.calculate_review_xp(&db_pr, submitted_at);
+                    let xp = self
+                        .score_calculator
+                        .calculate_review_xp(&db_pr, submitted_at);
                     let _ = db::users::add_xp(&self.pool, reviewer.id, xp).await;
                 }
                 Err(e) => {
