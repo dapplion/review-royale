@@ -49,19 +49,26 @@ impl Backfiller {
     }
 
     /// Backfill a repository, fetching PRs updated since last sync (or max_age_days if first run)
+    /// If `force` is true, ignores last_synced_at and fetches full history up to max_age_days
     pub async fn backfill_repo(
         &self,
         owner: &str,
         name: &str,
+        force: bool,
     ) -> Result<BackfillProgress, BackfillError> {
-        info!("Starting backfill for {}/{}", owner, name);
+        info!("Starting backfill for {}/{} (force: {})", owner, name, force);
 
         // Get or create the repository
         let gh_repo = self.client.get_repo(owner, name).await?;
         let repo = db::repos::upsert(&self.pool, gh_repo.id, owner, name).await?;
 
-        // Get last sync time
-        let last_synced = db::repos::get_last_synced_at(&self.pool, repo.id).await?;
+        // Get last sync time (ignore if force=true)
+        let last_synced = if force {
+            info!("Force mode: ignoring last_synced_at");
+            None
+        } else {
+            db::repos::get_last_synced_at(&self.pool, repo.id).await?
+        };
         let sync_start = Utc::now();
 
         info!(

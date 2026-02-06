@@ -158,6 +158,9 @@
                     GitHub
                 </a>
             </p>
+            <p class="mt-2 text-xs text-gray-700" id="last-synced">
+                Last synced: loading...
+            </p>
         </footer>
     </div>
 
@@ -318,9 +321,43 @@
             }
         }
 
+        async function loadLastSynced() {
+            try {
+                const response = await fetch('/api/backfill/sigp/lighthouse');
+                if (response.ok) {
+                    const data = await response.json();
+                    const el = document.getElementById('last-synced');
+                    if (data.last_synced_at) {
+                        const date = new Date(data.last_synced_at);
+                        const relative = getRelativeTime(date);
+                        el.textContent = `Last synced: ${relative}`;
+                        el.title = date.toLocaleString();
+                    } else {
+                        el.textContent = 'Last synced: never';
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load sync status:', e);
+            }
+        }
+
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        }
+
         // Load leaderboard on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadLeaderboard('month');
+            loadLastSynced();
         });
     </script>
 </body>

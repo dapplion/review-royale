@@ -17,6 +17,9 @@ pub struct BackfillParams {
     /// Maximum age in days to look back (default: 365)
     #[serde(default = "default_max_days")]
     pub max_days: u32,
+    /// Force full backfill, ignoring last_synced_at
+    #[serde(default)]
+    pub force: bool,
 }
 
 fn default_max_days() -> u32 {
@@ -46,8 +49,8 @@ pub async fn trigger(
     Query(params): Query<BackfillParams>,
 ) -> impl IntoResponse {
     info!(
-        "Backfill requested for {}/{} (max_days: {})",
-        owner, name, params.max_days
+        "Backfill requested for {}/{} (max_days: {}, force: {})",
+        owner, name, params.max_days, params.force
     );
 
     let backfiller = processor::Backfiller::new(
@@ -56,7 +59,7 @@ pub async fn trigger(
         params.max_days,
     );
 
-    match backfiller.backfill_repo(&owner, &name).await {
+    match backfiller.backfill_repo(&owner, &name, params.force).await {
         Ok(progress) => {
             let response = BackfillResponse {
                 success: true,
