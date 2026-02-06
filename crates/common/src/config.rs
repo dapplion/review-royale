@@ -12,6 +12,8 @@ pub struct Config {
     pub discord_guild_id: Option<String>,
     pub host: String,
     pub port: u16,
+    /// Sync interval in hours (0 = disabled)
+    pub sync_interval_hours: u32,
 }
 
 impl Config {
@@ -31,6 +33,10 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(3000),
+            sync_interval_hours: env::var("SYNC_INTERVAL_HOURS")
+                .ok()
+                .and_then(|h| h.parse().ok())
+                .unwrap_or(6),
         }
     }
 }

@@ -1,7 +1,9 @@
 //! Review Royale API Server
 
 use axum::{routing::get, Router};
+use processor::{SyncConfig, SyncService};
 use std::sync::Arc;
+use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -35,6 +37,25 @@ async fn main() -> anyhow::Result<()> {
 
     // Run migrations
     db::run_migrations(&pool).await?;
+
+    // Start background sync service (if enabled)
+    if config.sync_interval_hours > 0 {
+        let sync_config = SyncConfig {
+            interval: Duration::from_secs(config.sync_interval_hours as u64 * 60 * 60),
+            max_age_days: 365,
+            github_token: config.github_token.clone(),
+        };
+        let sync_service = SyncService::new(pool.clone(), sync_config);
+        tokio::spawn(async move {
+            sync_service.run().await;
+        });
+        info!(
+            "📡 Background sync enabled (every {} hours)",
+            config.sync_interval_hours
+        );
+    } else {
+        info!("📡 Background sync disabled (SYNC_INTERVAL_HOURS=0)");
+    }
 
     // Create app state
     let state = Arc::new(AppState::new(config.clone(), pool));
