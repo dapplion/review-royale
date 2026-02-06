@@ -130,19 +130,27 @@ Level = floor(sqrt(XP / 100)) + 1
 ### M4: Polish (Current)
 - [x] Track comment counts per review
 - [x] Track first reviews (who reviewed first)
-- [ ] Force re-backfill to populate comments/first reviews
+- [x] Sort leaderboard by XP (not review count)
+- [x] Pre-push hook for cargo fmt
+- [ ] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
 - [ ] Test coverage
 - [ ] Error handling improvements
 
-### M5: Discord Bot
+### M5: Review Quality Analysis
+- [ ] Store inline review comments (new `review_comments` table)
+- [ ] AI categorization (cosmetic/logic/structural/nit/question)
+- [ ] Quality score per comment
+- [ ] Quality-weighted XP bonuses
+
+### M6: Discord Bot
 - [ ] Leaderboard command
 - [ ] Weekly digest
 - [ ] Achievement notifications
 - [ ] Roast command
 
-### M6: Advanced Features
+### M7: Advanced Features
 - [ ] Achievement unlock logic
 - [ ] Seasons (monthly/quarterly resets)
-- [ ] Review quality scoring
 - [ ] Team leaderboards
 - [ ] User profile pages
+- [ ] Filter bots from leaderboard
