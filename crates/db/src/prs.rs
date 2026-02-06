@@ -1,9 +1,17 @@
 //! Pull request queries
 
 use common::models::{PrState, PullRequest};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+
+fn parse_pr_state(s: &str) -> PrState {
+    match s {
+        "merged" => PrState::Merged,
+        "closed" => PrState::Closed,
+        _ => PrState::Open,
+    }
+}
 
 /// Create or update a pull request
 pub async fn upsert(
@@ -21,31 +29,42 @@ pub async fn upsert(
         PrState::Merged => "merged",
         PrState::Closed => "closed",
     };
-    
-    sqlx::query_as!(
-        PullRequest,
+
+    let id = Uuid::new_v4();
+    let row = sqlx::query(
         r#"
         INSERT INTO pull_requests (id, repo_id, github_id, number, title, author_id, state, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (github_id) DO UPDATE
         SET title = EXCLUDED.title,
             state = EXCLUDED.state
-        RETURNING 
-            id, repo_id, github_id, number, title, author_id,
-            state as "state: PrState",
-            created_at, first_review_at, merged_at, closed_at
+        RETURNING id, repo_id, github_id, number, title, author_id, state, created_at, first_review_at, merged_at, closed_at
         "#,
-        Uuid::new_v4(),
-        repo_id,
-        github_id,
-        number,
-        title,
-        author_id,
-        state_str,
-        created_at,
     )
+    .bind(id)
+    .bind(repo_id)
+    .bind(github_id)
+    .bind(number)
+    .bind(title)
+    .bind(author_id)
+    .bind(state_str)
+    .bind(created_at)
     .fetch_one(pool)
-    .await
+    .await?;
+
+    Ok(PullRequest {
+        id: row.get("id"),
+        repo_id: row.get("repo_id"),
+        github_id: row.get("github_id"),
+        number: row.get("number"),
+        title: row.get("title"),
+        author_id: row.get("author_id"),
+        state: parse_pr_state(row.get("state")),
+        created_at: row.get("created_at"),
+        first_review_at: row.get("first_review_at"),
+        merged_at: row.get("merged_at"),
+        closed_at: row.get("closed_at"),
+    })
 }
 
 /// Record first review time
@@ -54,15 +73,15 @@ pub async fn set_first_review(
     pr_id: Uuid,
     first_review_at: DateTime<Utc>,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+    sqlx::query(
         r#"
         UPDATE pull_requests
         SET first_review_at = $2
         WHERE id = $1 AND first_review_at IS NULL
         "#,
-        pr_id,
-        first_review_at,
     )
+    .bind(pr_id)
+    .bind(first_review_at)
     .execute(pool)
     .await?;
     Ok(())
@@ -74,21 +93,31 @@ pub async fn get_by_number(
     repo_id: Uuid,
     number: i32,
 ) -> Result<Option<PullRequest>, sqlx::Error> {
-    sqlx::query_as!(
-        PullRequest,
+    let row = sqlx::query(
         r#"
-        SELECT 
-            id, repo_id, github_id, number, title, author_id,
-            state as "state: PrState",
-            created_at, first_review_at, merged_at, closed_at
+        SELECT id, repo_id, github_id, number, title, author_id, state, created_at, first_review_at, merged_at, closed_at
         FROM pull_requests
         WHERE repo_id = $1 AND number = $2
         "#,
-        repo_id,
-        number,
     )
+    .bind(repo_id)
+    .bind(number)
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    Ok(row.map(|r| PullRequest {
+        id: r.get("id"),
+        repo_id: r.get("repo_id"),
+        github_id: r.get("github_id"),
+        number: r.get("number"),
+        title: r.get("title"),
+        author_id: r.get("author_id"),
+        state: parse_pr_state(r.get("state")),
+        created_at: r.get("created_at"),
+        first_review_at: r.get("first_review_at"),
+        merged_at: r.get("merged_at"),
+        closed_at: r.get("closed_at"),
+    }))
 }
 
 /// List recent PRs for a repo
@@ -97,21 +126,34 @@ pub async fn list_recent(
     repo_id: Uuid,
     limit: i32,
 ) -> Result<Vec<PullRequest>, sqlx::Error> {
-    sqlx::query_as!(
-        PullRequest,
+    let rows = sqlx::query(
         r#"
-        SELECT 
-            id, repo_id, github_id, number, title, author_id,
-            state as "state: PrState",
-            created_at, first_review_at, merged_at, closed_at
+        SELECT id, repo_id, github_id, number, title, author_id, state, created_at, first_review_at, merged_at, closed_at
         FROM pull_requests
         WHERE repo_id = $1
         ORDER BY created_at DESC
         LIMIT $2
         "#,
-        repo_id,
-        limit as i64,
     )
+    .bind(repo_id)
+    .bind(limit as i64)
     .fetch_all(pool)
-    .await
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| PullRequest {
+            id: r.get("id"),
+            repo_id: r.get("repo_id"),
+            github_id: r.get("github_id"),
+            number: r.get("number"),
+            title: r.get("title"),
+            author_id: r.get("author_id"),
+            state: parse_pr_state(r.get("state")),
+            created_at: r.get("created_at"),
+            first_review_at: r.get("first_review_at"),
+            merged_at: r.get("merged_at"),
+            closed_at: r.get("closed_at"),
+        })
+        .collect())
 }

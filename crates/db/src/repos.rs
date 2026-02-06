@@ -1,8 +1,9 @@
 //! Repository queries
 
 use common::models::Repository;
-use sqlx::PgPool;
+use sqlx::{FromRow, PgPool, Row};
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 /// Get or create a repository
 pub async fn upsert(
@@ -11,8 +12,8 @@ pub async fn upsert(
     owner: &str,
     name: &str,
 ) -> Result<Repository, sqlx::Error> {
-    sqlx::query_as!(
-        Repository,
+    let id = Uuid::new_v4();
+    let row = sqlx::query(
         r#"
         INSERT INTO repositories (id, github_id, owner, name, created_at)
         VALUES ($1, $2, $3, $4, NOW())
@@ -20,13 +21,21 @@ pub async fn upsert(
         SET owner = EXCLUDED.owner, name = EXCLUDED.name
         RETURNING id, github_id, owner, name, created_at
         "#,
-        Uuid::new_v4(),
-        github_id,
-        owner,
-        name,
     )
+    .bind(id)
+    .bind(github_id)
+    .bind(owner)
+    .bind(name)
     .fetch_one(pool)
-    .await
+    .await?;
+
+    Ok(Repository {
+        id: row.get("id"),
+        github_id: row.get("github_id"),
+        owner: row.get("owner"),
+        name: row.get("name"),
+        created_at: row.get("created_at"),
+    })
 }
 
 /// Get repository by owner/name
@@ -35,22 +44,39 @@ pub async fn get_by_name(
     owner: &str,
     name: &str,
 ) -> Result<Option<Repository>, sqlx::Error> {
-    sqlx::query_as!(
-        Repository,
+    let row = sqlx::query(
         "SELECT id, github_id, owner, name, created_at FROM repositories WHERE owner = $1 AND name = $2",
-        owner,
-        name,
     )
+    .bind(owner)
+    .bind(name)
     .fetch_optional(pool)
-    .await
+    .await?;
+
+    Ok(row.map(|r| Repository {
+        id: r.get("id"),
+        github_id: r.get("github_id"),
+        owner: r.get("owner"),
+        name: r.get("name"),
+        created_at: r.get("created_at"),
+    }))
 }
 
 /// List all tracked repositories
 pub async fn list(pool: &PgPool) -> Result<Vec<Repository>, sqlx::Error> {
-    sqlx::query_as!(
-        Repository,
-        "SELECT id, github_id, owner, name, created_at FROM repositories ORDER BY owner, name"
+    let rows = sqlx::query(
+        "SELECT id, github_id, owner, name, created_at FROM repositories ORDER BY owner, name",
     )
     .fetch_all(pool)
-    .await
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| Repository {
+            id: r.get("id"),
+            github_id: r.get("github_id"),
+            owner: r.get("owner"),
+            name: r.get("name"),
+            created_at: r.get("created_at"),
+        })
+        .collect())
 }
