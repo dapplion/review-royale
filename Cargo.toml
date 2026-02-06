@@ -1,0 +1,69 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "crates/db",
+    "crates/github",
+    "crates/processor",
+    "crates/api",
+    "crates/bot",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/dapplion/review-royale"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "uuid"] }
+
+# Redis
+redis = { version = "0.25", features = ["tokio-comp"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Crypto (for webhook verification)
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# Config
+dotenvy = "0.15"
+
+# Discord bot
+serenity = { version = "0.12", features = ["client", "gateway", "model", "framework"] }
+
+# Workspace crates
+common = { path = "crates/common" }
+db = { path = "crates/db" }
+github = { path = "crates/github" }
+processor = { path = "crates/processor" }

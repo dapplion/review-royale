@@ -1,0 +1,26 @@
+# Rust
+/target/
+Cargo.lock
+*.rs.bk
+
+# Environment
+.env
+*.pem
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (for web/)
+node_modules/
+.svelte-kit/
+build/
+
+# Logs
+*.log

@@ -1,0 +1,25 @@
+[package]
+name = "api"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "review-royale-api"
+path = "src/main.rs"
+
+[dependencies]
+common = { workspace = true }
+db = { workspace = true }
+github = { workspace = true }
+processor = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenvy = { workspace = true }

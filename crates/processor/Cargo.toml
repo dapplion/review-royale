@@ -1,0 +1,15 @@
+[package]
+name = "processor"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common = { workspace = true }
+db = { workspace = true }
+github = { workspace = true }
+sqlx = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }

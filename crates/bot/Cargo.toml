@@ -1,0 +1,18 @@
+[package]
+name = "bot"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "review-royale-bot"
+path = "src/main.rs"
+
+[dependencies]
+common = { workspace = true }
+db = { workspace = true }
+serenity = { workspace = true }
+tokio = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenvy = { workspace = true }

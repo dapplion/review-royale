@@ -1,0 +1,21 @@
+//! Health check routes
+
+use axum::Json;
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct HealthResponse {
+    status: &'static str,
+    version: &'static str,
+}
+
+pub async fn root() -> &'static str {
+    "👑 Review Royale"
+}
+
+pub async fn health() -> Json<HealthResponse> {
+    Json(HealthResponse {
+        status: "ok",
+        version: env!("CARGO_PKG_VERSION"),
+    })
+}

@@ -1,0 +1,13 @@
+[package]
+name = "db"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common = { workspace = true }
+sqlx = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
