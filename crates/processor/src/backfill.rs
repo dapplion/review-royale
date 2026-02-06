@@ -227,7 +227,6 @@ impl Backfiller {
 
         let mut reviews_count = 0u32;
         let mut first_review_at = None;
-        let mut first_reviewer_id = None;
 
         for review in reviews {
             // Skip reviews without a user (ghost accounts)
@@ -283,7 +282,6 @@ impl Backfiller {
                     // Track first review (by submitted_at)
                     if first_review_at.is_none() || submitted_at < first_review_at.unwrap() {
                         first_review_at = Some(submitted_at);
-                        first_reviewer_id = Some(reviewer.id);
                     }
 
                     // Award XP

@@ -4,6 +4,8 @@
 
 Gamified PR review analytics for GitHub repositories. Tracks review activity via GitHub API polling, awards XP, achievements, and maintains leaderboards.
 
+**Live at**: https://review-royale.fly.dev
+
 ## Architecture
 
 ```
@@ -15,29 +17,24 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 │  │   GitHub     │───▶│   Backfill   │───▶│   Database   │  │
 │  │     API      │    │   Service    │    │  (Postgres)  │  │
 │  └──────────────┘    └──────────────┘    └──────────────┘  │
-│                                                   │          │
-│                                                   ▼          │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   Discord    │◀───│     API      │◀───│  Processor   │  │
-│  │     Bot      │    │   Server     │    │  (XP/Achv)   │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘  │
+│                             │                    │          │
+│                      ┌──────┴───────┐            │          │
+│                      │ Sync Service │            ▼          │
+│                      │ (every N hr) │    ┌──────────────┐  │
+│                      └──────────────┘    │  Processor   │  │
+│                                          │  (XP/Achv)   │  │
+│  ┌──────────────┐    ┌──────────────┐    └──────────────┘  │
+│  │   Discord    │◀───│     API      │◀──────────┘          │
+│  │     Bot      │    │   Server     │                       │
+│  └──────────────┘    └──────────────┘                       │
 │                             │                               │
 │                             ▼                               │
 │                      ┌──────────────┐                       │
 │                      │   Frontend   │                       │
-│                      │  (SvelteKit) │                       │
+│                      │ (Vanilla JS) │                       │
 │                      └──────────────┘                       │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-## Data Flow
-
-1. **Backfill Service** polls GitHub API for PRs and reviews
-2. **Processor** computes XP, checks achievement conditions
-3. **Database** stores all state (users, PRs, reviews, achievements)
-4. **API Server** exposes REST endpoints for leaderboard, stats
-5. **Discord Bot** sends notifications, weekly digests, roasts
-6. **Frontend** displays leaderboard and user profiles
 
 ## Crates
 
@@ -46,15 +43,15 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 | `common` | Shared types, config, errors |
 | `db` | PostgreSQL queries and migrations |
 | `github` | GitHub API client |
-| `processor` | Backfill, XP calculation, achievements |
-| `api` | REST API server (Axum) |
-| `bot` | Discord bot (Serenity) |
+| `processor` | Backfill, sync, XP calculation, achievements |
+| `api` | REST API server (Axum) + static frontend |
+| `bot` | Discord bot (Serenity) — skeleton only |
 
 ## API Endpoints
 
 ### Public
 - `GET /health` - Health check
-- `GET /api/leaderboard` - Global leaderboard
+- `GET /api/leaderboard?period=week|month|all&limit=N` - Global leaderboard
 - `GET /api/repos` - List tracked repositories
 - `GET /api/repos/:owner/:name` - Repository details
 - `GET /api/repos/:owner/:name/leaderboard` - Repo-specific leaderboard
@@ -62,8 +59,8 @@ Gamified PR review analytics for GitHub repositories. Tracks review activity via
 - `GET /api/users/:username/stats` - User statistics
 
 ### Admin
-- `GET /api/backfill/:owner/:name` - Check backfill status
-- `POST /api/backfill/:owner/:name` - Trigger backfill (params: `max_days`)
+- `GET /api/backfill/:owner/:name` - Check backfill status & last sync
+- `POST /api/backfill/:owner/:name?max_days=N&force=bool` - Trigger backfill
 
 ## Scoring System
 
@@ -88,7 +85,7 @@ Level = floor(sqrt(XP / 100)) + 1
 | 5 | 1,600 |
 | 10 | 8,100 |
 
-### Achievements
+### Achievements (Defined)
 
 | ID | Name | Description | XP | Rarity |
 |----|------|-------------|-----|--------|
@@ -100,35 +97,12 @@ Level = floor(sqrt(XP / 100)) + 1
 | `night_owl` | Night Owl | Submit 10 reviews after midnight | 150 | Uncommon |
 | `review_streak_7` | On Fire | Review PRs 7 days in a row | 300 | Rare |
 
-## Backfill Strategy
-
-1. **Initial run**: Fetch PRs from last 365 days
-2. **Incremental**: Track `last_synced_at` per repo, only fetch updated PRs
-3. **Rate limiting**: Respect GitHub's 5000 req/hr, exponential backoff on 403
-4. **Caching**: Store sync cursor to resume on failure
-
-## Test Plan
-
-### Unit Tests
-- **github**: API client mocking, pagination, error handling
-- **db**: CRUD operations, leaderboard queries, idempotency
-- **processor**: XP formulas, achievement triggers, backfill dedup
-
-### Integration Tests
-- Backfill flow (mock GitHub → DB assertions)
-- API endpoints (test server → JSON responses)
-- Full flow (backfill → XP → leaderboard)
-
-### Test Infrastructure
-- Real Postgres in CI (already configured)
-- `wiremock` for GitHub API mocking
-- Transaction rollback for test isolation
-
 ## Deployment
 
-- **Platform**: Fly.io
+- **Platform**: Fly.io (review-royale.fly.dev)
 - **Database**: Fly Postgres
-- **CI/CD**: GitHub Actions (auto-deploy on main)
+- **CI/CD**: GitHub Actions (auto-deploy on push to main)
+- **Secrets**: DATABASE_URL, GITHUB_TOKEN, FLY_API_TOKEN
 
 ## Milestones
 
@@ -136,28 +110,39 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Database schema
 - [x] GitHub API client
 - [x] Backfill service
+- [x] Background sync service
 - [x] XP calculation
 - [x] REST API
 
-### M2: Polish (Current)
-- [ ] Comprehensive test coverage
-- [ ] Production deployment
-- [ ] Backfill sigp/lighthouse
+### M2: Frontend ✅
+- [x] Leaderboard page with dark theme
+- [x] Period selectors (week/month/all)
+- [x] Stats summary (reviewers, reviews, comments, first reviews)
+- [x] Level badges with colors
+- [x] Last synced timestamp
 
-### M3: Discord Bot
+### M3: Deployment ✅
+- [x] Docker + Fly.io
+- [x] CI/CD pipeline
+- [x] Production database
+- [x] Backfill sigp/lighthouse (365 days)
+
+### M4: Polish (Current)
+- [x] Track comment counts per review
+- [x] Track first reviews (who reviewed first)
+- [ ] Force re-backfill to populate comments/first reviews
+- [ ] Test coverage
+- [ ] Error handling improvements
+
+### M5: Discord Bot
 - [ ] Leaderboard command
 - [ ] Weekly digest
 - [ ] Achievement notifications
 - [ ] Roast command
 
-### M4: Frontend
-- [ ] SvelteKit app
-- [ ] Leaderboard page
-- [ ] User profiles
-- [ ] Repository stats
-
-### M5: Advanced Features
+### M6: Advanced Features
+- [ ] Achievement unlock logic
 - [ ] Seasons (monthly/quarterly resets)
 - [ ] Review quality scoring
 - [ ] Team leaderboards
-- [ ] Custom achievements
+- [ ] User profile pages
