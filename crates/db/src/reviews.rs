@@ -1,9 +1,11 @@
 //! Review queries
 
+#![allow(clippy::too_many_arguments)]
+
+use chrono::{DateTime, Utc};
 use common::models::{Review, ReviewState};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 fn parse_review_state(s: &str) -> ReviewState {
     match s {

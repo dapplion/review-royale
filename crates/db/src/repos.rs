@@ -1,9 +1,8 @@
 //! Repository queries
 
 use common::models::Repository;
-use sqlx::{FromRow, PgPool, Row};
+use sqlx::{PgPool, Row};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Get or create a repository
 pub async fn upsert(

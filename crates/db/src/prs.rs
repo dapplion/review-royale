@@ -1,9 +1,11 @@
 //! Pull request queries
 
+#![allow(clippy::too_many_arguments)]
+
+use chrono::{DateTime, Utc};
 use common::models::{PrState, PullRequest};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 fn parse_pr_state(s: &str) -> PrState {
     match s {
