@@ -117,6 +117,7 @@ pub struct Season {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UserStats {
     pub reviews_given: i32,
+    pub prs_reviewed: i32,
     pub first_reviews: i32,
     pub comments_written: i32,
     pub prs_authored: i32,

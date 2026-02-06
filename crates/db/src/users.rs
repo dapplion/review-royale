@@ -133,7 +133,7 @@ pub async fn add_xp(pool: &PgPool, user_id: Uuid, xp: i64) -> Result<User, sqlx:
     })
 }
 
-/// Get user stats including reviews, comments, first reviews
+/// Get user stats including reviews, comments, first reviews, distinct PRs reviewed
 pub async fn get_stats(
     pool: &PgPool,
     user_id: Uuid,
@@ -149,6 +149,7 @@ pub async fn get_stats(
         )
         SELECT
             COUNT(r.id)::int as reviews_given,
+            COUNT(DISTINCT r.pr_id)::int as prs_reviewed,
             COALESCE(SUM(r.comments_count), 0)::int as comments_written,
             COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = $1), 0)::int as first_reviews,
             COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1)::int as prs_authored,
@@ -166,6 +167,7 @@ pub async fn get_stats(
 
     Ok(UserStats {
         reviews_given: row.get("reviews_given"),
+        prs_reviewed: row.get("prs_reviewed"),
         first_reviews: row.get("first_reviews"),
         comments_written: row.get("comments_written"),
         prs_authored: row.get("prs_authored"),
@@ -214,6 +216,67 @@ pub async fn get_weekly_activity(
                 r.get::<i32, _>("reviews"),
                 r.get::<i64, _>("xp"),
             )
+        })
+        .collect())
+}
+
+/// Review with PR details for display
+#[derive(Debug)]
+pub struct ReviewWithPr {
+    pub review_id: Uuid,
+    pub state: String,
+    pub comments_count: i32,
+    pub submitted_at: DateTime<Utc>,
+    pub pr_number: i32,
+    pub pr_title: String,
+    pub pr_state: String,
+    pub repo_owner: String,
+    pub repo_name: String,
+}
+
+/// Get recent reviews by a user
+pub async fn get_recent_reviews(
+    pool: &PgPool,
+    user_id: Uuid,
+    limit: i64,
+) -> Result<Vec<ReviewWithPr>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        SELECT
+            r.id as review_id,
+            r.state::text as state,
+            r.comments_count,
+            r.submitted_at,
+            pr.number as pr_number,
+            pr.title as pr_title,
+            pr.state::text as pr_state,
+            repo.owner as repo_owner,
+            repo.name as repo_name
+        FROM reviews r
+        JOIN pull_requests pr ON pr.id = r.pr_id
+        JOIN repositories repo ON repo.id = pr.repo_id
+        WHERE r.reviewer_id = $1
+        ORDER BY r.submitted_at DESC
+        LIMIT $2
+        "#,
+    )
+    .bind(user_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| ReviewWithPr {
+            review_id: r.get("review_id"),
+            state: r.get("state"),
+            comments_count: r.get("comments_count"),
+            submitted_at: r.get("submitted_at"),
+            pr_number: r.get("pr_number"),
+            pr_title: r.get("pr_title"),
+            pr_state: r.get("pr_state"),
+            repo_owner: r.get("repo_owner"),
+            repo_name: r.get("repo_name"),
         })
         .collect())
 }

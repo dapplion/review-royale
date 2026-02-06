@@ -144,10 +144,14 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-reviews" class="text-2xl font-bold text-pink-400">-</div>
                     <div class="text-xs text-gray-500">Reviews</div>
+                </div>
+                <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
+                    <div id="profile-prs-reviewed" class="text-2xl font-bold text-orange-400">-</div>
+                    <div class="text-xs text-gray-500">PRs Reviewed</div>
                 </div>
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-first" class="text-2xl font-bold text-green-400">-</div>
@@ -168,10 +172,17 @@
                 <div id="xp-breakdown" class="bg-black/20 rounded-xl p-4 space-y-2 text-sm"></div>
             </div>
 
-            <div>
+            <div class="mb-8">
                 <h3 class="text-lg font-semibold mb-4">📈 Activity Over Time</h3>
                 <div class="bg-black/20 rounded-xl p-4" style="height: 300px;">
                     <canvas id="activity-chart"></canvas>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold mb-4">📝 Recent Reviews</h3>
+                <div id="recent-reviews" class="bg-black/20 rounded-xl p-4 space-y-3">
+                    <div class="text-center text-gray-500 py-4">Loading...</div>
                 </div>
             </div>
         </div>
@@ -346,6 +357,7 @@
                 document.getElementById('profile-level').textContent = `Level ${user.level}`;
 
                 document.getElementById('profile-reviews').textContent = stats.reviews_given || 0;
+                document.getElementById('profile-prs-reviewed').textContent = stats.prs_reviewed || 0;
                 document.getElementById('profile-first').textContent = stats.first_reviews || 0;
                 document.getElementById('profile-comments').textContent = stats.comments_written || 0;
                 document.getElementById('profile-prs').textContent = stats.prs_authored || 0;
@@ -365,6 +377,9 @@
 
                 // Load activity chart
                 loadActivityChart(username);
+                
+                // Load recent reviews
+                loadRecentReviews(username);
             } catch (error) {
                 console.error('Error loading profile:', error);
             }
@@ -416,6 +431,62 @@
                     }
                 });
             } catch (e) { console.error('Failed to load activity chart:', e); }
+        }
+
+        async function loadRecentReviews(username) {
+            const container = document.getElementById('recent-reviews');
+            container.innerHTML = '<div class="text-center text-gray-500 py-4">Loading...</div>';
+            
+            try {
+                const response = await fetch(`/api/users/${username}/reviews?limit=10`);
+                if (!response.ok) throw new Error('Failed to load reviews');
+                
+                const reviews = await response.json();
+                
+                if (reviews.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-4">No reviews yet</div>';
+                    return;
+                }
+                
+                container.innerHTML = reviews.map(r => {
+                    const stateColors = {
+                        approved: 'text-green-400',
+                        changes_requested: 'text-red-400',
+                        commented: 'text-blue-400',
+                        dismissed: 'text-gray-400'
+                    };
+                    const stateEmojis = {
+                        approved: '✅',
+                        changes_requested: '❌',
+                        commented: '💬',
+                        dismissed: '🚫'
+                    };
+                    const stateColor = stateColors[r.state] || 'text-gray-400';
+                    const stateEmoji = stateEmojis[r.state] || '📝';
+                    const date = new Date(r.submitted_at);
+                    const timeAgo = getRelativeTime(date);
+                    
+                    return `
+                        <div class="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            <span class="text-2xl">${stateEmoji}</span>
+                            <div class="flex-1 min-w-0">
+                                <a href="https://github.com/${r.repo_owner}/${r.repo_name}/pull/${r.pr_number}" target="_blank" class="font-medium text-white hover:text-purple-400 transition-colors truncate block">
+                                    ${r.pr_title}
+                                </a>
+                                <div class="text-xs text-gray-500 mt-1 flex items-center gap-3">
+                                    <span>${r.repo_owner}/${r.repo_name}#${r.pr_number}</span>
+                                    <span class="${stateColor} capitalize">${r.state.replace('_', ' ')}</span>
+                                    ${r.comments_count > 0 ? `<span>💬 ${r.comments_count}</span>` : ''}
+                                    <span>${timeAgo}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load recent reviews:', e);
+                container.innerHTML = '<div class="text-center text-red-400 py-4">Failed to load reviews</div>';
+            }
         }
 
         // Handle browser back button
