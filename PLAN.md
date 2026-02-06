@@ -160,3 +160,12 @@ Level = floor(sqrt(XP / 100)) + 1
 - [ ] Team leaderboards
 - [ ] User profile pages
 - [ ] Filter bots from leaderboard
+
+## TODOs Before Launch
+
+### XP Recalculation
+- [ ] Add "reset and recalculate all XP" function
+  - Zeros all user XP
+  - Recomputes from all reviews in database
+  - Use when XP formula changes or before production launch
+- [ ] Run full DB reset + recalculate with final formula before launch
