@@ -37,31 +37,23 @@ impl AchievementChecker {
             .map_err(|e| common::Error::Database(e.to_string()))?;
 
         // First review
-        if count == 1 {
-            if self.try_unlock(user_id, defs::FIRST_REVIEW).await? {
-                unlocked.push(defs::FIRST_REVIEW.to_string());
-            }
+        if count == 1 && self.try_unlock(user_id, defs::FIRST_REVIEW).await? {
+            unlocked.push(defs::FIRST_REVIEW.to_string());
         }
 
         // 10 reviews
-        if count >= 10 {
-            if self.try_unlock(user_id, defs::REVIEW_10).await? {
-                unlocked.push(defs::REVIEW_10.to_string());
-            }
+        if count >= 10 && self.try_unlock(user_id, defs::REVIEW_10).await? {
+            unlocked.push(defs::REVIEW_10.to_string());
         }
 
         // 50 reviews
-        if count >= 50 {
-            if self.try_unlock(user_id, defs::REVIEW_50).await? {
-                unlocked.push(defs::REVIEW_50.to_string());
-            }
+        if count >= 50 && self.try_unlock(user_id, defs::REVIEW_50).await? {
+            unlocked.push(defs::REVIEW_50.to_string());
         }
 
         // 100 reviews
-        if count >= 100 {
-            if self.try_unlock(user_id, defs::REVIEW_100).await? {
-                unlocked.push(defs::REVIEW_100.to_string());
-            }
+        if count >= 100 && self.try_unlock(user_id, defs::REVIEW_100).await? {
+            unlocked.push(defs::REVIEW_100.to_string());
         }
 
         Ok(unlocked)

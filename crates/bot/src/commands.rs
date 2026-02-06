@@ -17,7 +17,7 @@ pub async fn handle(
     match parts.first() {
         Some(&"leaderboard") | Some(&"lb") => leaderboard(ctx, msg, pool).await,
         Some(&"stats") => {
-            let username = parts.get(1).map(|s| *s);
+            let username = parts.get(1).copied();
             stats(ctx, msg, pool, username).await
         }
         Some(&"help") => help(ctx, msg).await,
@@ -71,10 +71,7 @@ async fn stats(
     pool: &PgPool,
     username: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let username = username.unwrap_or_else(|| {
-        // Try to use Discord username
-        msg.author.name.as_str()
-    });
+    let username = username.unwrap_or(msg.author.name.as_str());
 
     info!("Stats command for {} from {}", username, msg.author.name);
 
