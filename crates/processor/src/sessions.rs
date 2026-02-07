@@ -4,6 +4,10 @@ use chrono::{DateTime, Duration, Utc};
 use common::models::{Commit, Review};
 use uuid::Uuid;
 
+#[cfg(test)]
+#[path = "sessions_test.rs"]
+mod sessions_test;
+
 /// A grouped review session
 #[derive(Debug, Clone)]
 pub struct ReviewSession {
