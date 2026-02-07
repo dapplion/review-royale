@@ -220,4 +220,7 @@ Level = floor(sqrt(XP / 100)) + 1
   - Recomputes from all reviews in database grouped into sessions
   - Use when XP formula changes or before production launch
   - Available at `POST /api/recalculate`
-- [ ] Run full DB reset + recalculate with final formula (after commit fetching backfill)
+- [x] Run full DB reset + recalculate with session-based formula ✅ (2026-02-07)
+  - Results: jimmygchen dropped from 19.9K XP (#1) → 700 XP (#3)
+  - michaelsproul now #1 with 925 XP
+  - Formula correctly rewards depth over comment spam
