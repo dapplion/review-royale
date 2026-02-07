@@ -62,7 +62,9 @@ impl Backfiller {
 
         info!(
             "Last sync: {:?}, fetching PRs updated since then",
-            last_synced.map(|d| d.to_rfc3339()).unwrap_or_else(|| format!("{} days ago", self.max_age_days))
+            last_synced
+                .map(|d| d.to_rfc3339())
+                .unwrap_or_else(|| format!("{} days ago", self.max_age_days))
         );
 
         // Fetch PRs
