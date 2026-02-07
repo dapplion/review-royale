@@ -81,7 +81,7 @@ impl SyncService {
             info!("Syncing {}/{}", repo.owner, repo.name);
 
             match backfiller
-                .backfill_repo(&repo.owner, &repo.name, false)
+                .backfill_repo(&repo.owner, &repo.name)
                 .await
             {
                 Ok(progress) => {
