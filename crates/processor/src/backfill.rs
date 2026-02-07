@@ -1,4 +1,4 @@
-//! Backfill historical data from GitHub API
+//! Sync service for GitHub data
 
 use chrono::Utc;
 use common::models::{PrState, ReviewState};
@@ -6,8 +6,6 @@ use github::{GitHubClient, GithubPr};
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::{debug, info, warn};
-
-use crate::scores::ScoreCalculator;
 
 #[derive(Error, Debug)]
 pub enum BackfillError {
@@ -29,11 +27,10 @@ pub struct BackfillProgress {
     pub current_pr: Option<i32>,
 }
 
-/// Backfill historical data from GitHub
+/// Sync service for GitHub data
 pub struct Backfiller {
     pool: PgPool,
     client: GitHubClient,
-    score_calculator: ScoreCalculator,
     max_age_days: u32,
 }
 
@@ -41,9 +38,8 @@ impl Backfiller {
     pub fn new(pool: PgPool, github_token: Option<String>, max_age_days: u32) -> Self {
         let client = GitHubClient::new(github_token);
         Self {
-            pool: pool.clone(),
+            pool,
             client,
-            score_calculator: ScoreCalculator::new(pool),
             max_age_days,
         }
     }
@@ -299,13 +295,7 @@ impl Backfiller {
                         first_review_at = Some(submitted_at);
                     }
 
-                    // Award XP
-                    let xp = self.score_calculator.calculate_review_xp(
-                        &db_pr,
-                        submitted_at,
-                        comments_count,
-                    );
-                    let _ = db::users::add_xp(&self.pool, reviewer.id, xp).await;
+                    // XP is awarded via recalculation, not during sync
                 }
                 Err(e) => {
                     // Likely duplicate, ignore
