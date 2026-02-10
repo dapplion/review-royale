@@ -15,7 +15,11 @@ pub async fn handle(
     let parts: Vec<&str> = command.split_whitespace().collect();
 
     match parts.first() {
-        Some(&"leaderboard") | Some(&"lb") => leaderboard(ctx, msg, pool).await,
+        Some(&"leaderboard") | Some(&"lb") => {
+            // Optional: !rr lb week | !rr lb month | !rr lb all
+            let period = parts.get(1).copied().unwrap_or("month");
+            leaderboard(ctx, msg, pool, period).await
+        }
         Some(&"stats") => {
             let username = parts.get(1).copied();
             stats(ctx, msg, pool, username).await
@@ -33,10 +37,16 @@ async fn leaderboard(
     ctx: &Context,
     msg: &Message,
     pool: &PgPool,
+    period: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    info!("Leaderboard command from {}", msg.author.name);
+    info!("Leaderboard command from {} (period: {})", msg.author.name, period);
 
-    let since = Utc::now() - Duration::days(30);
+    let (since, period_label) = match period {
+        "week" | "w" => (Utc::now() - Duration::days(7), "This Week"),
+        "all" | "a" => (Utc::now() - Duration::days(365 * 10), "All Time"),
+        _ => (Utc::now() - Duration::days(30), "This Month"), // Default: month
+    };
+
     let entries = db::leaderboard::get_leaderboard(pool, None, since, 10).await?;
 
     if entries.is_empty() {
@@ -45,7 +55,7 @@ async fn leaderboard(
         return Ok(());
     }
 
-    let mut response = String::from("👑 **Review Royale Leaderboard** (Last 30 days)\n\n");
+    let mut response = format!("👑 **Review Royale Leaderboard** ({})\n\n", period_label);
 
     for entry in entries {
         let medal = match entry.rank {
@@ -56,8 +66,8 @@ async fn leaderboard(
         };
 
         response.push_str(&format!(
-            "{} **#{}** {} — {} reviews (Level {})\n",
-            medal, entry.rank, entry.user.login, entry.stats.reviews_given, entry.user.level
+            "{} **#{}** {} — {} XP ({} reviews)\n",
+            medal, entry.rank, entry.user.login, entry.score, entry.stats.reviews_given
         ));
     }
 
@@ -114,10 +124,10 @@ async fn help(
     msg: &Message,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let response = "👑 **Review Royale Commands**\n\n\
-        `!rr leaderboard` — Show top reviewers\n\
+        `!rr lb [period]` — Leaderboard (week/month/all, default: month)\n\
         `!rr stats [username]` — Show user stats\n\
         `!rr help` — Show this help\n\n\
-        More commands coming soon! 🚀";
+        **Scoring:** Reviews earn XP based on depth and speed. More comments = more XP! 🔥";
 
     msg.reply(&ctx.http, response).await?;
     Ok(())
