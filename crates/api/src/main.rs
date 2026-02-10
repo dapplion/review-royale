@@ -99,6 +99,10 @@ async fn main() -> anyhow::Result<()> {
             "/api/recalculate",
             axum::routing::post(routes::recalc::trigger),
         )
+        .route(
+            "/api/categorize",
+            get(routes::categorize::stats).post(routes::categorize::trigger),
+        )
         .with_state(state);
 
     // Build full router with static file serving

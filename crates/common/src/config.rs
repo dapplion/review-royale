@@ -10,6 +10,7 @@ pub struct Config {
     pub github_token: Option<String>,
     pub discord_token: Option<String>,
     pub discord_guild_id: Option<String>,
+    pub openai_api_key: Option<String>,
     pub host: String,
     pub port: u16,
     /// Sync interval in hours (0 = disabled)
@@ -28,6 +29,7 @@ impl Config {
             github_token: env::var("GITHUB_TOKEN").ok(),
             discord_token: env::var("DISCORD_TOKEN").ok(),
             discord_guild_id: env::var("DISCORD_GUILD_ID").ok(),
+            openai_api_key: env::var("OPENAI_API_KEY").ok(),
             host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             port: env::var("PORT")
                 .ok()

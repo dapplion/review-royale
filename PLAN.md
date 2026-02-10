@@ -195,8 +195,8 @@ Level = floor(sqrt(XP / 100)) + 1
 
 ### M5: Review Quality Analysis
 - [x] Store inline review comments (new `review_comments` table)
-- [ ] AI categorization (cosmetic/logic/structural/nit/question)
-- [ ] Quality score per comment
+- [x] AI categorization (cosmetic/logic/structural/nit/question)
+- [x] Quality score per comment (1-10 scale)
 - [ ] Quality-weighted XP bonuses
 
 ### M6: Mattermost Bot
