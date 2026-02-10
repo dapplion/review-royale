@@ -86,7 +86,7 @@
                 <div class="col-span-1 text-center">#</div>
                 <div class="col-span-8 md:col-span-4">Player</div>
                 <div class="col-span-2 text-center hidden md:block">Level</div>
-                <div class="col-span-3 md:col-span-2 text-right">XP</div>
+                <div class="col-span-3 md:col-span-2 text-right"><span class="hidden md:inline" id="xp-header-label">XP</span><span class="md:hidden">XP</span></div>
                 <div class="col-span-3 text-right hidden md:block">Stats</div>
             </div>
             <div id="leaderboard-body">
@@ -419,6 +419,12 @@
             if (activeBtn) {
                 activeBtn.classList.remove('bg-white/5', 'hover:bg-white/10', 'border-white/10');
                 activeBtn.classList.add('bg-purple-600', 'hover:bg-purple-500', 'border-purple-500');
+            }
+            // Update XP header label to show period context
+            const label = document.getElementById('xp-header-label');
+            if (label) {
+                const labels = { week: 'Week XP', month: 'Month XP', all: 'Total XP' };
+                label.textContent = labels[period] || 'XP';
             }
         }
 
