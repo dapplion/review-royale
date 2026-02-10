@@ -371,17 +371,18 @@
                 document.getElementById('profile-comments').textContent = stats.comments_written || 0;
                 document.getElementById('profile-prs').textContent = stats.prs_authored || 0;
 
-                // XP Breakdown (estimated)
-                const reviewXP = (stats.reviews_given || 0) * 10;
-                const firstXP = (stats.first_reviews || 0) * 15;
+                // XP Breakdown (estimated based on current formula)
+                const reviewBaseXP = (stats.reviews_given || 0) * 10;
                 const commentXP = (stats.comments_written || 0) * 5;
+                const estimatedTotal = reviewBaseXP + commentXP;
+                const bonusXP = user.xp - estimatedTotal;
                 const breakdown = document.getElementById('xp-breakdown');
                 breakdown.innerHTML = `
-                    <div class="flex justify-between"><span class="text-gray-400">📝 Reviews (${stats.reviews_given || 0} × 10)</span><span class="text-white">+${formatNumber(reviewXP)} XP</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">🥇 First Reviews (${stats.first_reviews || 0} × 15)</span><span class="text-white">+${formatNumber(firstXP)} XP</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">📝 Review sessions (${stats.reviews_given || 0} × 10)</span><span class="text-white">+${formatNumber(reviewBaseXP)} XP</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × 5)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
-                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Estimated Total</span><span class="text-purple-400">${formatNumber(reviewXP + firstXP + commentXP)} XP</span></div>
-                    <div class="text-xs text-gray-600 mt-2">* Actual XP may differ due to speed bonuses and historical changes</div>
+                    ${bonusXP > 0 ? `<div class="flex justify-between"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
+                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(user.xp)} XP</span></div>
+                    <div class="text-xs text-gray-600 mt-2">Bonuses: Fast (<1h) +10, Thorough (>5 comments) +5, Deep (>10) +10</div>
                 `;
 
                 // Load activity chart
