@@ -56,9 +56,9 @@
         </header>
 
         <div class="flex justify-center gap-2 mb-8">
-            <button onclick="loadLeaderboard('week')" id="btn-week" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">This Week</button>
-            <button onclick="loadLeaderboard('month')" id="btn-month" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-purple-600 hover:bg-purple-500 border border-purple-500">This Month</button>
-            <button onclick="loadLeaderboard('all')" id="btn-all" class="period-btn px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10">All Time</button>
+            <button onclick="loadLeaderboard('week')" id="btn-week" class="period-btn px-4 md:px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10 min-h-[48px]">This Week</button>
+            <button onclick="loadLeaderboard('month')" id="btn-month" class="period-btn px-4 md:px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 bg-purple-600 hover:bg-purple-500 border border-purple-500 min-h-[48px]">This Month</button>
+            <button onclick="loadLeaderboard('all')" id="btn-all" class="period-btn px-4 md:px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10 min-h-[48px]">All Time</button>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-summary">
@@ -83,8 +83,8 @@
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
             <div class="grid grid-cols-12 gap-2 md:gap-4 px-3 md:px-6 py-4 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                 <div class="col-span-1 text-center">#</div>
-                <div class="col-span-5 md:col-span-4">Player</div>
-                <div class="col-span-3 md:col-span-2 text-center">Level</div>
+                <div class="col-span-6 md:col-span-4">Player</div>
+                <div class="col-span-2 md:col-span-2 text-center">Level</div>
                 <div class="col-span-3 md:col-span-2 text-right">XP</div>
                 <div class="col-span-3 text-right hidden md:block">Stats</div>
             </div>
@@ -214,11 +214,17 @@
             return num.toString();
         }
         function getLevelColor(level) {
-            if (level >= 50) return 'from-yellow-400 to-orange-500';
-            if (level >= 30) return 'from-purple-400 to-pink-500';
-            if (level >= 20) return 'from-blue-400 to-cyan-500';
-            if (level >= 10) return 'from-green-400 to-emerald-500';
+            if (level >= 50) return 'from-yellow-300 to-amber-500 shadow-amber-500/50 shadow-lg';
+            if (level >= 30) return 'from-purple-400 to-pink-500 shadow-pink-500/30 shadow-md';
+            if (level >= 20) return 'from-blue-400 to-cyan-500 shadow-cyan-500/30 shadow-md';
+            if (level >= 10) return 'from-green-400 to-emerald-500 shadow-emerald-500/20 shadow-sm';
+            if (level >= 5) return 'from-teal-400 to-teal-600';
             return 'from-gray-400 to-gray-500';
+        }
+        function getLevelSize(level) {
+            if (level >= 50) return 'text-sm px-4 py-1.5';
+            if (level >= 20) return 'text-sm px-3 py-1';
+            return 'text-xs px-2 py-1';
         }
         function getRelativeTime(date) {
             const now = new Date();
@@ -253,21 +259,21 @@
                         <div class="col-span-1 text-center">
                             <span class="text-lg md:text-xl ${rank <= 3 ? 'font-bold' : 'text-gray-500'}">${getRankIcon(rank)}</span>
                         </div>
-                        <div class="col-span-5 md:col-span-4 flex items-center gap-2 md:gap-3">
-                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-10 h-10 md:w-12 md:h-12 rounded-full ring-2 ring-white/20" onerror="this.src='https://github.com/ghost.png'">
-                            <div class="overflow-hidden">
-                                <div class="font-semibold text-white user-login text-sm md:text-base truncate">${user.login}</div>
+                        <div class="col-span-6 md:col-span-4 flex items-center gap-2 md:gap-3">
+                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-8 h-8 md:w-12 md:h-12 rounded-full ring-2 ring-white/20 flex-shrink-0" onerror="this.src='https://github.com/ghost.png'">
+                            <div class="overflow-hidden min-w-0">
+                                <div class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</div>
                                 <div class="text-xs text-gray-500">${stats.reviews_given || 0} reviews</div>
                             </div>
                         </div>
-                        <div class="col-span-3 md:col-span-2 text-center">
-                            <div class="inline-flex items-center gap-1 px-2 md:px-3 py-1 rounded-full bg-gradient-to-r ${levelColor} text-xs font-bold text-white shadow-lg">
+                        <div class="col-span-2 md:col-span-2 text-center">
+                            <div class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${levelColor} ${getLevelSize(user.level)} font-bold text-white">
                                 <span class="hidden md:inline">Lvl </span>${user.level}
                             </div>
                         </div>
                         <div class="col-span-3 md:col-span-2 text-right">
-                            <div class="font-bold text-base md:text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
-                            <div class="text-xs text-gray-500">XP</div>
+                            <div class="font-bold text-lg md:text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
+                            <div class="text-xs text-gray-500 hidden md:block">XP</div>
                         </div>
                         <div class="col-span-3 text-right hidden md:block">
                             <div class="flex justify-end gap-4 text-sm">
