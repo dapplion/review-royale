@@ -437,7 +437,7 @@ mod tests {
         assert_eq!(sessions[0].total_comments, 8);
 
         let xp = calculate_session_xp(&sessions[0], None);
-        // 10 base + 8*5 comments = 50 XP
-        assert_eq!(xp, 50, "Jimmy's session = 50 XP not 90 XP");
+        // 10 base + 8*5 comments + 5 thorough (>5 comments) = 55 XP
+        assert_eq!(xp, 55, "Jimmy's session = 55 XP (base + comments + thorough)");
     }
 }

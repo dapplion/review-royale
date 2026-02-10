@@ -180,12 +180,12 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] XP over time chart (per day/week)
   - [x] Recent reviews list
 - [x] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
-- [ ] **Multi-repo support**: Generalize to any GitHub repo
-  - [ ] URL structure: `/:org/:repo` → repo leaderboard
+- [x] **Multi-repo support**: Generalize to any GitHub repo
+  - [x] URL structure: `/:org/:repo` → repo leaderboard
   - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
-  - [ ] Global leaderboard at `/` (all repos combined)
-  - [ ] Repo selector/switcher
-  - [ ] **SECURITY**: Access control by org:
+  - [x] Global leaderboard at `/` (all repos combined)
+  - [x] Repo selector/switcher
+  - [x] **SECURITY**: Access control by org:
     - `sigp/*` repos → show leaderboard (allowed)
     - Private repos → 404 / show nothing (prevent leaking internal repos)
     - Other orgs (public) → "Request access" page with link to Lion's Twitter
