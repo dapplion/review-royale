@@ -83,9 +83,9 @@
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
             <div class="grid grid-cols-12 gap-1 md:gap-4 px-2 md:px-6 py-4 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
                 <div class="col-span-1 text-center">#</div>
-                <div class="col-span-7 md:col-span-4">Player</div>
-                <div class="col-span-2 md:col-span-2 text-center hidden md:block">Level</div>
-                <div class="col-span-4 md:col-span-2 text-right">XP</div>
+                <div class="col-span-8 md:col-span-4">Player</div>
+                <div class="col-span-2 text-center hidden md:block">Level</div>
+                <div class="col-span-3 md:col-span-2 text-right">XP</div>
                 <div class="col-span-3 text-right hidden md:block">Stats</div>
             </div>
             <div id="leaderboard-body">
@@ -259,14 +259,14 @@
                         <div class="col-span-1 text-center">
                             <span class="text-base md:text-xl ${rank <= 3 ? 'font-bold' : 'text-gray-500'}">${getRankIcon(rank)}</span>
                         </div>
-                        <div class="col-span-7 md:col-span-4 flex items-center gap-2 md:gap-3">
-                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-8 h-8 md:w-12 md:h-12 rounded-full ring-2 ring-white/20 flex-shrink-0" onerror="this.src='https://github.com/ghost.png'">
+                        <div class="col-span-8 md:col-span-4 flex items-center gap-2 md:gap-3">
+                            <img src="${user.avatar_url || `https://github.com/${user.login}.png`}" alt="${user.login}" class="w-9 h-9 md:w-12 md:h-12 rounded-full ring-2 ring-white/20 flex-shrink-0" onerror="this.src='https://github.com/ghost.png'">
                             <div class="overflow-hidden min-w-0 flex-1">
-                                <div class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</div>
-                                <div class="text-xs text-gray-500 flex items-center gap-2">
-                                    <span class="md:hidden inline-flex items-center px-1.5 py-0.5 rounded-full bg-gradient-to-r ${levelColor} text-[10px] font-bold">${user.level}</span>
-                                    <span>${stats.reviews_given || 0} reviews</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</span>
+                                    <span class="md:hidden inline-flex items-center px-1.5 py-0.5 rounded bg-gradient-to-r ${levelColor} text-[10px] font-bold flex-shrink-0">${user.level}</span>
                                 </div>
+                                <div class="text-xs text-gray-500">${stats.reviews_given || 0} reviews</div>
                             </div>
                         </div>
                         <div class="col-span-2 text-center hidden md:block">
@@ -274,7 +274,7 @@
                                 Lvl ${user.level}
                             </div>
                         </div>
-                        <div class="col-span-4 md:col-span-2 text-right">
+                        <div class="col-span-3 md:col-span-2 text-right">
                             <div class="font-bold text-lg md:text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">${formatNumber(user.xp)}</div>
                             <div class="text-[10px] text-gray-500">XP</div>
                         </div>
