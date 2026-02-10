@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Duration, Utc};
 use common::models::{Commit, Review};
+use db::review_comments::CommentQualityData;
 use uuid::Uuid;
 
 #[cfg(test)]
@@ -102,10 +103,31 @@ fn finalize_session(reviews: Vec<Review>) -> Option<ReviewSession> {
     })
 }
 
-/// Calculate XP for a review session
+/// Calculate XP for a review session (legacy, no quality data)
 pub fn calculate_session_xp(
     session: &ReviewSession,
     commit_before_session: Option<DateTime<Utc>>,
+) -> i64 {
+    calculate_session_xp_with_quality(session, commit_before_session, None)
+}
+
+/// Calculate XP for a review session with quality-weighted bonuses
+///
+/// Quality bonus formula:
+/// - Low quality (1-3): +2 XP per comment (reduced from +5)
+/// - Medium quality (4-6): +5 XP per comment (standard)
+/// - High quality (7-10): +8 XP per comment (bonus)
+///
+/// Category bonus (for categorized comments):
+/// - logic: +3 XP per comment (catches bugs = most valuable)
+/// - structural: +2 XP per comment (design improvements)
+/// - cosmetic/nit/question: +0 XP (standard)
+///
+/// Uncategorized comments: use flat +5 XP (standard rate)
+pub fn calculate_session_xp_with_quality(
+    session: &ReviewSession,
+    commit_before_session: Option<DateTime<Utc>>,
+    quality_data: Option<&CommentQualityData>,
 ) -> i64 {
     // Check minimum threshold: at least 1 comment or state change
     let has_state_change = session.reviews.iter().any(|r| {
@@ -128,8 +150,28 @@ pub fn calculate_session_xp(
 
     let mut xp: i64 = 10; // Base XP
 
-    // Comments: +5 XP per comment (already counted in comments_count)
-    xp += session.total_comments as i64 * 5;
+    // Calculate comment XP with quality weighting
+    if let Some(qd) = quality_data {
+        let (low, medium, high) = qd.by_tier;
+        let (logic, structural, _other) = qd.by_category;
+        let categorized = qd.categorized_count;
+        let uncategorized = session.total_comments - categorized;
+
+        // Quality-weighted XP
+        xp += low as i64 * 2; // Low quality: +2 each
+        xp += medium as i64 * 5; // Medium quality: +5 each
+        xp += high as i64 * 8; // High quality: +8 each
+
+        // Uncategorized comments at standard rate
+        xp += uncategorized as i64 * 5;
+
+        // Category bonuses (on top of quality XP)
+        xp += logic as i64 * 3; // Logic bugs: +3 bonus
+        xp += structural as i64 * 2; // Structural: +2 bonus
+    } else {
+        // No quality data - use flat rate
+        xp += session.total_comments as i64 * 5;
+    }
 
     // Fast review: +10 XP if reviewed <1 hour after commits pushed
     if let Some(commit_time) = commit_before_session {

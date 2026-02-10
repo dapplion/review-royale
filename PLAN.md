@@ -107,10 +107,30 @@ Individual GitHub review events (comments, approvals) are grouped into **review 
 
 **No "first reviewer" bonus** — we don't reward racing. Multiple reviewers can all get the fast bonus.
 
-**Example:**
+**Example (without quality data):**
 - Author pushes commits at 10:00 AM
 - Alice reviews at 10:30 AM with 3 comments → 10 base + 15 comments + 10 fast = **35 XP**
 - Bob reviews at 10:45 AM with 7 comments → 10 base + 35 comments + 10 fast + 5 thorough = **60 XP**
+
+### Quality-Weighted XP (M5)
+
+When comments are AI-categorized, XP is weighted by quality:
+
+**Quality tiers (per comment):**
+- Low quality (1-3): +2 XP (brief, superficial)
+- Medium quality (4-6): +5 XP (standard)
+- High quality (7-10): +8 XP (detailed, insightful)
+
+**Category bonuses (on top of quality XP):**
+- `logic`: +3 XP (catches bugs = most valuable)
+- `structural`: +2 XP (design improvements)
+- `cosmetic`/`nit`/`question`: +0 XP
+
+**Example (with quality data):**
+- 5 high-quality comments, 2 catching logic bugs, 1 structural:
+- 10 base + 5×8 quality + 2×3 logic + 1×2 structural = 10 + 40 + 6 + 2 = **58 XP**
+
+Uncategorized comments use the flat +5 XP rate.
 
 ### Levels
 ```
@@ -197,7 +217,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Store inline review comments (new `review_comments` table)
 - [x] AI categorization (cosmetic/logic/structural/nit/question)
 - [x] Quality score per comment (1-10 scale)
-- [ ] Quality-weighted XP bonuses
+- [x] Quality-weighted XP bonuses
 
 ### M6: Mattermost Bot
 - [ ] Leaderboard command

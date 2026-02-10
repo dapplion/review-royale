@@ -202,3 +202,54 @@ fn row_to_comment(row: sqlx::postgres::PgRow) -> ReviewComment {
         quality_score: row.get("quality_score"),
     }
 }
+
+/// Quality data for XP calculation
+#[derive(Debug, Clone, Default)]
+pub struct CommentQualityData {
+    /// Count by quality tier: (low, medium, high)
+    pub by_tier: (i32, i32, i32),
+    /// Count by category: (logic, structural, other)
+    pub by_category: (i32, i32, i32),
+    /// Total categorized comments
+    pub categorized_count: i32,
+}
+
+/// Get aggregated quality data for comments by PR and user
+pub async fn get_quality_data_for_pr_user(
+    pool: &PgPool,
+    pr_id: Uuid,
+    user_id: Uuid,
+) -> Result<CommentQualityData, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT 
+            COUNT(*) FILTER (WHERE quality_score IS NOT NULL AND quality_score <= 3) as low_quality,
+            COUNT(*) FILTER (WHERE quality_score IS NOT NULL AND quality_score >= 4 AND quality_score <= 6) as medium_quality,
+            COUNT(*) FILTER (WHERE quality_score IS NOT NULL AND quality_score >= 7) as high_quality,
+            COUNT(*) FILTER (WHERE category = 'logic') as logic_count,
+            COUNT(*) FILTER (WHERE category = 'structural') as structural_count,
+            COUNT(*) FILTER (WHERE category IS NOT NULL AND category NOT IN ('logic', 'structural')) as other_count,
+            COUNT(*) FILTER (WHERE category IS NOT NULL) as categorized_count
+        FROM review_comments
+        WHERE pr_id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(pr_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(CommentQualityData {
+        by_tier: (
+            row.get::<i64, _>("low_quality") as i32,
+            row.get::<i64, _>("medium_quality") as i32,
+            row.get::<i64, _>("high_quality") as i32,
+        ),
+        by_category: (
+            row.get::<i64, _>("logic_count") as i32,
+            row.get::<i64, _>("structural_count") as i32,
+            row.get::<i64, _>("other_count") as i32,
+        ),
+        categorized_count: row.get::<i64, _>("categorized_count") as i32,
+    })
+}

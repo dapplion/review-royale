@@ -1,8 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use crate::sessions::{calculate_session_xp, group_reviews_into_sessions, ReviewSession};
+    use crate::sessions::{
+        calculate_session_xp, calculate_session_xp_with_quality, group_reviews_into_sessions,
+        ReviewSession,
+    };
     use chrono::{DateTime, TimeZone, Utc};
     use common::models::{Commit, Review, ReviewState};
+    use db::review_comments::CommentQualityData;
     use uuid::Uuid;
 
     fn make_review(
@@ -440,5 +444,146 @@ mod tests {
             xp, 55,
             "Jimmy's session = 55 XP (base + comments + thorough)"
         );
+    }
+
+    #[test]
+    fn test_xp_quality_weighted_high_quality() {
+        let pr_id = Uuid::new_v4();
+        let reviewer_id = Uuid::new_v4();
+
+        let session = ReviewSession {
+            pr_id,
+            reviewer_id,
+            reviews: vec![make_review(
+                pr_id,
+                reviewer_id,
+                Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+                ReviewState::ChangesRequested,
+                5,
+            )],
+            started_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+            ended_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 30, 0).unwrap(),
+            total_comments: 5,
+        };
+
+        // All 5 comments are high quality (score 7-10)
+        let quality_data = CommentQualityData {
+            by_tier: (0, 0, 5),     // (low, medium, high)
+            by_category: (2, 1, 2), // (logic, structural, other)
+            categorized_count: 5,
+        };
+
+        let xp = calculate_session_xp_with_quality(&session, None, Some(&quality_data));
+        // 10 base + 5*8 high quality + 2*3 logic bonus + 1*2 structural bonus = 10 + 40 + 6 + 2 = 58 XP
+        assert_eq!(
+            xp, 58,
+            "5 high-quality comments with category bonuses = 58 XP"
+        );
+    }
+
+    #[test]
+    fn test_xp_quality_weighted_mixed() {
+        let pr_id = Uuid::new_v4();
+        let reviewer_id = Uuid::new_v4();
+
+        let session = ReviewSession {
+            pr_id,
+            reviewer_id,
+            reviews: vec![make_review(
+                pr_id,
+                reviewer_id,
+                Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+                ReviewState::ChangesRequested,
+                8,
+            )],
+            started_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+            ended_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 30, 0).unwrap(),
+            total_comments: 8,
+        };
+
+        // Mixed quality: 2 low, 3 medium, 3 high, 1 logic bug
+        let quality_data = CommentQualityData {
+            by_tier: (2, 3, 3),     // (low, medium, high)
+            by_category: (1, 0, 7), // (logic, structural, other)
+            categorized_count: 8,
+        };
+
+        let xp = calculate_session_xp_with_quality(&session, None, Some(&quality_data));
+        // 10 base + 2*2 low + 3*5 medium + 3*8 high + 1*3 logic + 5 thorough = 10 + 4 + 15 + 24 + 3 + 5 = 61 XP
+        assert_eq!(xp, 61, "Mixed quality 8 comments = 61 XP");
+    }
+
+    #[test]
+    fn test_xp_quality_weighted_low_quality() {
+        let pr_id = Uuid::new_v4();
+        let reviewer_id = Uuid::new_v4();
+
+        let session = ReviewSession {
+            pr_id,
+            reviewer_id,
+            reviews: vec![make_review(
+                pr_id,
+                reviewer_id,
+                Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+                ReviewState::ChangesRequested,
+                3,
+            )],
+            started_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+            ended_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 30, 0).unwrap(),
+            total_comments: 3,
+        };
+
+        // All 3 comments are low quality (nits)
+        let quality_data = CommentQualityData {
+            by_tier: (3, 0, 0),     // (low, medium, high)
+            by_category: (0, 0, 3), // (logic, structural, other)
+            categorized_count: 3,
+        };
+
+        let xp_with_quality =
+            calculate_session_xp_with_quality(&session, None, Some(&quality_data));
+        let xp_without_quality = calculate_session_xp(&session, None);
+
+        // With quality: 10 base + 3*2 low = 16 XP
+        // Without quality: 10 base + 3*5 = 25 XP
+        assert_eq!(xp_with_quality, 16, "3 low-quality comments = 16 XP");
+        assert_eq!(xp_without_quality, 25, "Same without quality data = 25 XP");
+        assert!(
+            xp_with_quality < xp_without_quality,
+            "Low quality should earn less XP"
+        );
+    }
+
+    #[test]
+    fn test_xp_quality_with_uncategorized() {
+        let pr_id = Uuid::new_v4();
+        let reviewer_id = Uuid::new_v4();
+
+        let session = ReviewSession {
+            pr_id,
+            reviewer_id,
+            reviews: vec![make_review(
+                pr_id,
+                reviewer_id,
+                Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+                ReviewState::ChangesRequested,
+                6,
+            )],
+            started_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap(),
+            ended_at: Utc.with_ymd_and_hms(2026, 1, 1, 10, 30, 0).unwrap(),
+            total_comments: 6,
+        };
+
+        // Only 4 categorized, 2 uncategorized
+        let quality_data = CommentQualityData {
+            by_tier: (1, 2, 1),     // (low, medium, high) = 4 total
+            by_category: (1, 0, 3), // (logic, structural, other) = 4 total
+            categorized_count: 4,
+        };
+
+        let xp = calculate_session_xp_with_quality(&session, None, Some(&quality_data));
+        // 10 base + 1*2 low + 2*5 medium + 1*8 high + 2*5 uncategorized + 1*3 logic + 5 thorough
+        // = 10 + 2 + 10 + 8 + 10 + 3 + 5 = 48 XP
+        assert_eq!(xp, 48, "4 categorized + 2 uncategorized = 48 XP");
     }
 }

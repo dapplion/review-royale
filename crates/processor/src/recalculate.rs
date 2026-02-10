@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use tracing::info;
 use uuid::Uuid;
 
-use crate::sessions::{calculate_session_xp, group_reviews_into_sessions};
+use crate::sessions::{calculate_session_xp_with_quality, group_reviews_into_sessions};
 
 /// Recalculate all user XP from scratch based on review sessions
 pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sqlx::Error> {
@@ -54,6 +54,12 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
             .cloned()
             .collect();
 
+        // Get quality data for this PR/user combination
+        let quality_data =
+            db::review_comments::get_quality_data_for_pr_user(pool, pr_id, reviewer_id)
+                .await
+                .ok();
+
         // Group into sessions
         let sessions = group_reviews_into_sessions(pr_reviews, pr_commits.clone());
         total_sessions += sessions.len();
@@ -67,7 +73,8 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
                 .max_by_key(|c| c.committed_at)
                 .map(|c| c.committed_at);
 
-            let xp = calculate_session_xp(&session, commit_before);
+            let xp =
+                calculate_session_xp_with_quality(&session, commit_before, quality_data.as_ref());
 
             if xp > 0 {
                 // Award XP to user
