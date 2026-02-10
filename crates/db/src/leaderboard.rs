@@ -30,14 +30,14 @@ pub async fn get_leaderboard(
         user_stats AS (
             SELECT 
                 u.id,
-                u.review_sessions as reviews_given,
+                COUNT(r.id)::int as reviews_given,
                 COALESCE(SUM(r.comments_count), 0)::int as comments_written,
                 COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews
             FROM users u
             LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $1
             LEFT JOIN pull_requests pr ON pr.id = r.pr_id
             WHERE ($2::uuid IS NULL OR pr.repo_id = $2)
-            GROUP BY u.id, u.review_sessions
+            GROUP BY u.id
             HAVING COUNT(r.id) > 0
         )
         SELECT 

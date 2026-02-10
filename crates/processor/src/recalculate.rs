@@ -10,11 +10,15 @@ use crate::sessions::{calculate_session_xp_with_quality, group_reviews_into_sess
 pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sqlx::Error> {
     info!("Starting XP recalculation for all users");
 
-    // Step 1: Reset all user XP, session count, and review xp_earned
-    info!("Resetting all user XP, session counts, and review xp_earned to 0");
-    sqlx::query("UPDATE users SET xp = 0, level = 1, review_sessions = 0")
+    // Step 1: Reset all user XP and review xp_earned
+    info!("Resetting all user XP and review xp_earned to 0");
+    sqlx::query("UPDATE users SET xp = 0, level = 1")
         .execute(pool)
         .await?;
+    // Note: review_sessions column may not exist yet, ignore errors
+    let _ = sqlx::query("UPDATE users SET review_sessions = 0")
+        .execute(pool)
+        .await;
     // Note: xp_earned column may not exist yet, ignore errors
     let _ = sqlx::query("UPDATE reviews SET xp_earned = 0")
         .execute(pool)
@@ -104,9 +108,10 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
         }
     }
 
-    // Step 5: Update session counts for all users
+    // Step 5: Update session counts for all users (if column exists)
     info!("Updating session counts for {} users", user_session_counts.len());
     for (user_id, session_count) in &user_session_counts {
+        // Note: review_sessions column may not exist yet, ignore errors
         let _ = sqlx::query("UPDATE users SET review_sessions = $1 WHERE id = $2")
             .bind(*session_count)
             .bind(*user_id)
