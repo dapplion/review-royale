@@ -563,51 +563,53 @@ mod tests {
         let pr_id = Uuid::new_v4();
         let reviewer_id = Uuid::new_v4();
 
+        // Helper to create reviews more concisely
+        let r = |ts: &str| {
+            make_review(
+                pr_id,
+                reviewer_id,
+                ts.parse().unwrap(),
+                ReviewState::Commented,
+                1,
+            )
+        };
+
         // Jimmy's 18 review events from the GitHub API
         let reviews = vec![
-            make_review(pr_id, reviewer_id, "2026-02-09T06:46:26Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T06:49:48Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T06:52:42Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T06:55:26Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T06:57:03Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T10:46:20Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T10:54:42Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:07:20Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:07:55Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:24:42Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:32:29Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:34:17Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T11:41:31Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T12:55:35Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T22:38:32Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-09T22:44:24Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-10T00:32:44Z".parse().unwrap(), ReviewState::Commented, 1),
-            make_review(pr_id, reviewer_id, "2026-02-10T03:48:00Z".parse().unwrap(), ReviewState::Commented, 1), // After new commits
+            r("2026-02-09T06:46:26Z"),
+            r("2026-02-09T06:49:48Z"),
+            r("2026-02-09T06:52:42Z"),
+            r("2026-02-09T06:55:26Z"),
+            r("2026-02-09T06:57:03Z"),
+            r("2026-02-09T10:46:20Z"),
+            r("2026-02-09T10:54:42Z"),
+            r("2026-02-09T11:07:20Z"),
+            r("2026-02-09T11:07:55Z"),
+            r("2026-02-09T11:24:42Z"),
+            r("2026-02-09T11:32:29Z"),
+            r("2026-02-09T11:34:17Z"),
+            r("2026-02-09T11:41:31Z"),
+            r("2026-02-09T12:55:35Z"),
+            r("2026-02-09T22:38:32Z"),
+            r("2026-02-09T22:44:24Z"),
+            r("2026-02-10T00:32:44Z"),
+            r("2026-02-10T03:48:00Z"), // After new commits
         ];
 
         // Commits - the key ones are at 03:33 and 03:34 on Feb 10
         let commits = vec![
-            make_commit(pr_id, "2026-02-05T02:47:40Z".parse().unwrap()), // Last commit before Jimmy's reviews
-            make_commit(pr_id, "2026-02-10T03:33:12Z".parse().unwrap()), // New commit!
-            make_commit(pr_id, "2026-02-10T03:34:40Z".parse().unwrap()), // New commit!
+            make_commit(pr_id, "2026-02-05T02:47:40Z".parse().unwrap()),
+            make_commit(pr_id, "2026-02-10T03:33:12Z".parse().unwrap()), // New!
+            make_commit(pr_id, "2026-02-10T03:34:40Z".parse().unwrap()), // New!
         ];
 
         let sessions = group_reviews_into_sessions(reviews, commits);
 
         // Should be 2 sessions, not 18
-        assert_eq!(
-            sessions.len(),
-            2,
-            "Expected 2 sessions: 17 reviews before commits + 1 review after commits. Got {} sessions",
-            sessions.len()
-        );
-
-        // Session 1: 17 reviews (Feb 9 06:46 to Feb 10 00:32)
-        assert_eq!(sessions[0].reviews.len(), 17, "First session should have 17 reviews");
-        assert_eq!(sessions[0].total_comments, 17, "First session should have 17 comments");
-
-        // Session 2: 1 review (Feb 10 03:48, after commits at 03:33)
-        assert_eq!(sessions[1].reviews.len(), 1, "Second session should have 1 review");
+        assert_eq!(sessions.len(), 2, "Expected 2 sessions, got {}", sessions.len());
+        assert_eq!(sessions[0].reviews.len(), 17);
+        assert_eq!(sessions[0].total_comments, 17);
+        assert_eq!(sessions[1].reviews.len(), 1);
     }
 
     #[test]
