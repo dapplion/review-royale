@@ -223,7 +223,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Leaderboard command (with period filter: week/month/all)
 - [ ] Weekly digest
 - [ ] Achievement notifications
-- [ ] Roast command
+- [x] Roast command
 
 ### M7: Advanced Features
 - [ ] Achievement unlock logic
