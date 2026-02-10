@@ -109,7 +109,10 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
     }
 
     // Step 5: Update session counts for all users (if column exists)
-    info!("Updating session counts for {} users", user_session_counts.len());
+    info!(
+        "Updating session counts for {} users",
+        user_session_counts.len()
+    );
     for (user_id, session_count) in &user_session_counts {
         // Note: review_sessions column may not exist yet, ignore errors
         let _ = sqlx::query("UPDATE users SET review_sessions = $1 WHERE id = $2")
