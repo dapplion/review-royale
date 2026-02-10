@@ -39,7 +39,10 @@ async fn leaderboard(
     pool: &PgPool,
     period: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    info!("Leaderboard command from {} (period: {})", msg.author.name, period);
+    info!(
+        "Leaderboard command from {} (period: {})",
+        msg.author.name, period
+    );
 
     let (since, period_label) = match period {
         "week" | "w" => (Utc::now() - Duration::days(7), "This Week"),
