@@ -230,7 +230,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [ ] Seasons (monthly/quarterly resets)
 - [ ] Team leaderboards
 - [ ] User profile pages
-- [ ] Filter bots from leaderboard
+- [x] Filter bots from leaderboard
 
 ## Development Workflow: AI-Assisted UI Iteration
 
