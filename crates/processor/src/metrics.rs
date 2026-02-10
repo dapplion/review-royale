@@ -1,6 +1,10 @@
 //! Metrics computation
 
 use chrono::{DateTime, Duration, Utc};
+
+#[cfg(test)]
+#[path = "metrics_test.rs"]
+mod metrics_test;
 use common::models::PullRequest;
 
 /// Calculate time to first review in seconds

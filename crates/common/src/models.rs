@@ -4,6 +4,138 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Calculate user level from XP
+/// Formula: level = floor(sqrt(xp / 100)) + 1
+pub fn calculate_level(xp: i64) -> i32 {
+    if xp <= 0 {
+        return 1;
+    }
+    ((xp as f64 / 100.0).sqrt().floor() as i32) + 1
+}
+
+/// Calculate XP required to reach a given level
+/// Inverse of calculate_level: xp = (level - 1)² × 100
+pub fn xp_for_level(level: i32) -> i64 {
+    if level <= 1 {
+        return 0;
+    }
+    ((level - 1) as i64).pow(2) * 100
+}
+
+/// Calculate progress toward next level (0.0 to 1.0)
+pub fn level_progress(xp: i64) -> f64 {
+    let current_level = calculate_level(xp);
+    let current_level_xp = xp_for_level(current_level);
+    let next_level_xp = xp_for_level(current_level + 1);
+
+    if next_level_xp == current_level_xp {
+        return 0.0;
+    }
+
+    (xp - current_level_xp) as f64 / (next_level_xp - current_level_xp) as f64
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculate_level_zero_xp() {
+        assert_eq!(calculate_level(0), 1);
+    }
+
+    #[test]
+    fn test_calculate_level_negative_xp() {
+        assert_eq!(calculate_level(-100), 1);
+    }
+
+    #[test]
+    fn test_calculate_level_99_xp_still_level_1() {
+        assert_eq!(calculate_level(99), 1);
+    }
+
+    #[test]
+    fn test_calculate_level_100_xp_is_level_2() {
+        assert_eq!(calculate_level(100), 2);
+    }
+
+    #[test]
+    fn test_calculate_level_400_xp_is_level_3() {
+        assert_eq!(calculate_level(400), 3);
+    }
+
+    #[test]
+    fn test_calculate_level_900_xp_is_level_4() {
+        assert_eq!(calculate_level(900), 4);
+    }
+
+    #[test]
+    fn test_calculate_level_1600_xp_is_level_5() {
+        assert_eq!(calculate_level(1600), 5);
+    }
+
+    #[test]
+    fn test_calculate_level_8100_xp_is_level_10() {
+        assert_eq!(calculate_level(8100), 10);
+    }
+
+    #[test]
+    fn test_calculate_level_boundary_just_below_level_3() {
+        assert_eq!(calculate_level(399), 2);
+    }
+
+    #[test]
+    fn test_xp_for_level_1() {
+        assert_eq!(xp_for_level(1), 0);
+    }
+
+    #[test]
+    fn test_xp_for_level_2() {
+        assert_eq!(xp_for_level(2), 100);
+    }
+
+    #[test]
+    fn test_xp_for_level_5() {
+        assert_eq!(xp_for_level(5), 1600);
+    }
+
+    #[test]
+    fn test_xp_for_level_10() {
+        assert_eq!(xp_for_level(10), 8100);
+    }
+
+    #[test]
+    fn test_level_progress_at_level_start() {
+        // At exactly level 2 (100 XP), progress should be 0.0
+        assert!((level_progress(100) - 0.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_level_progress_halfway() {
+        // Level 2 is 100 XP, Level 3 is 400 XP, range = 300
+        // At 250 XP: (250 - 100) / 300 = 150/300 = 0.5
+        assert!((level_progress(250) - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_level_progress_near_level_up() {
+        // At 399 XP, still level 2, almost at level 3 (400)
+        // (399 - 100) / 300 = 299/300 ≈ 0.997
+        let progress = level_progress(399);
+        assert!(progress > 0.99);
+        assert!(progress < 1.0);
+    }
+
+    #[test]
+    fn test_round_trip_level_xp() {
+        // For any level, xp_for_level then calculate_level should return that level
+        for level in 1..=20 {
+            let xp = xp_for_level(level);
+            assert_eq!(calculate_level(xp), level, "Round trip failed for level {}", level);
+        }
+    }
+}
+
 /// A tracked GitHub repository
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Repository {
