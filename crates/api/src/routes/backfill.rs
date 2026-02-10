@@ -60,7 +60,10 @@ pub async fn trigger(
             .ok()
             .flatten()
         {
-            info!("Force backfill: resetting last_synced_at for {}/{}", owner, name);
+            info!(
+                "Force backfill: resetting last_synced_at for {}/{}",
+                owner, name
+            );
             let _ = db::repos::reset_last_synced_at(&state.pool, repo.id).await;
         }
     }

@@ -70,7 +70,7 @@ pub async fn get_leaderboard(
                 github_id: row.get("github_id"),
                 login: row.get("login"),
                 avatar_url: row.get("avatar_url"),
-                xp: period_xp, // Use period XP for display
+                xp: period_xp,           // Use period XP for display
                 level: row.get("level"), // Level is always all-time
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
