@@ -70,6 +70,18 @@ async fn main() -> anyhow::Result<()> {
             "/api/repos/:owner/:name/leaderboard",
             get(routes::leaderboard::get),
         )
+        .route(
+            "/api/repos/:owner/:name/users/:username/stats",
+            get(routes::users::repo_stats),
+        )
+        .route(
+            "/api/repos/:owner/:name/users/:username/activity",
+            get(routes::users::repo_activity),
+        )
+        .route(
+            "/api/repos/:owner/:name/users/:username/reviews",
+            get(routes::users::repo_reviews),
+        )
         .route("/api/users/:username", get(routes::users::get))
         .route("/api/users/:username/stats", get(routes::users::stats))
         .route(

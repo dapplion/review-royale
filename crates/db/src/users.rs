@@ -134,9 +134,20 @@ pub async fn add_xp(pool: &PgPool, user_id: Uuid, xp: i64) -> Result<User, sqlx:
 }
 
 /// Get user stats including reviews, comments, first reviews, distinct PRs reviewed
+/// If repo_id is Some, stats are scoped to that repo only
 pub async fn get_stats(
     pool: &PgPool,
     user_id: Uuid,
+    since: DateTime<Utc>,
+) -> Result<UserStats, sqlx::Error> {
+    get_stats_for_repo(pool, user_id, None, since).await
+}
+
+/// Get user stats scoped to a specific repo (or all repos if repo_id is None)
+pub async fn get_stats_for_repo(
+    pool: &PgPool,
+    user_id: Uuid,
+    repo_id: Option<Uuid>,
     since: DateTime<Utc>,
 ) -> Result<UserStats, sqlx::Error> {
     let row = sqlx::query(
@@ -144,7 +155,9 @@ pub async fn get_stats(
         WITH first_reviews AS (
             SELECT DISTINCT ON (r.pr_id) r.reviewer_id
             FROM reviews r
+            JOIN pull_requests pr ON pr.id = r.pr_id
             WHERE r.submitted_at >= $2
+              AND ($3::uuid IS NULL OR pr.repo_id = $3)
             ORDER BY r.pr_id, r.submitted_at ASC
         )
         SELECT
@@ -158,10 +171,12 @@ pub async fn get_stats(
         LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $2
         LEFT JOIN pull_requests pr ON pr.id = r.pr_id
         WHERE u.id = $1
+          AND ($3::uuid IS NULL OR pr.repo_id = $3)
         "#,
     )
     .bind(user_id)
     .bind(since)
+    .bind(repo_id)
     .fetch_one(pool)
     .await?;
 
@@ -182,6 +197,16 @@ pub async fn get_weekly_activity(
     user_id: Uuid,
     weeks: i32,
 ) -> Result<Vec<(String, i32, i64)>, sqlx::Error> {
+    get_weekly_activity_for_repo(pool, user_id, None, weeks).await
+}
+
+/// Get weekly activity for a user scoped to a specific repo
+pub async fn get_weekly_activity_for_repo(
+    pool: &PgPool,
+    user_id: Uuid,
+    repo_id: Option<Uuid>,
+    weeks: i32,
+) -> Result<Vec<(String, i32, i64)>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
         WITH weeks AS (
@@ -199,12 +224,15 @@ pub async fn get_weekly_activity(
         LEFT JOIN reviews r ON r.reviewer_id = $1 
             AND r.submitted_at >= w.week_start 
             AND r.submitted_at < w.week_start + '1 week'::interval
+        LEFT JOIN pull_requests pr ON pr.id = r.pr_id
+        WHERE ($3::uuid IS NULL OR pr.repo_id = $3)
         GROUP BY w.week_start
         ORDER BY w.week_start ASC
         "#,
     )
     .bind(user_id)
     .bind(weeks)
+    .bind(repo_id)
     .fetch_all(pool)
     .await?;
 
@@ -240,6 +268,16 @@ pub async fn get_recent_reviews(
     user_id: Uuid,
     limit: i64,
 ) -> Result<Vec<ReviewWithPr>, sqlx::Error> {
+    get_recent_reviews_for_repo(pool, user_id, None, limit).await
+}
+
+/// Get recent reviews by a user scoped to a specific repo
+pub async fn get_recent_reviews_for_repo(
+    pool: &PgPool,
+    user_id: Uuid,
+    repo_id: Option<Uuid>,
+    limit: i64,
+) -> Result<Vec<ReviewWithPr>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
         SELECT
@@ -256,12 +294,14 @@ pub async fn get_recent_reviews(
         JOIN pull_requests pr ON pr.id = r.pr_id
         JOIN repositories repo ON repo.id = pr.repo_id
         WHERE r.reviewer_id = $1
+          AND ($3::uuid IS NULL OR repo.id = $3)
         ORDER BY r.submitted_at DESC
         LIMIT $2
         "#,
     )
     .bind(user_id)
     .bind(limit)
+    .bind(repo_id)
     .fetch_all(pool)
     .await?;
 

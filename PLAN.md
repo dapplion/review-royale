@@ -182,7 +182,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
 - [x] **Multi-repo support**: Generalize to any GitHub repo
   - [x] URL structure: `/:org/:repo` → repo leaderboard
-  - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
+  - [x] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
   - [x] Global leaderboard at `/` (all repos combined)
   - [x] Repo selector/switcher
   - [x] **SECURITY**: Access control by org:

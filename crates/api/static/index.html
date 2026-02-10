@@ -213,7 +213,18 @@
             const path = window.location.pathname;
             const hash = window.location.hash;
             
-            // Check for /:org/:repo pattern
+            // Check for /:org/:repo/user/:username pattern (repo-scoped user profile)
+            const repoUserMatch = path.match(/^\/([^\/]+)\/([^\/]+)\/user\/([^\/]+)\/?$/);
+            if (repoUserMatch) {
+                return { 
+                    type: 'repo-user', 
+                    owner: repoUserMatch[1], 
+                    name: repoUserMatch[2],
+                    user: repoUserMatch[3]
+                };
+            }
+            
+            // Check for /:org/:repo pattern (repo leaderboard)
             const repoMatch = path.match(/^\/([^\/]+)\/([^\/]+)\/?$/);
             if (repoMatch) {
                 return { 
@@ -239,11 +250,25 @@
             return '/api';
         }
 
+        function getUserApiBase(username) {
+            if (currentRepo) {
+                return `/api/repos/${currentRepo.owner}/${currentRepo.name}/users/${username}`;
+            }
+            return `/api/users/${username}`;
+        }
+
         function getLeaderboardUrl() {
             if (currentRepo) {
                 return `/${currentRepo.owner}/${currentRepo.name}`;
             }
             return '/';
+        }
+
+        function getUserUrl(username) {
+            if (currentRepo) {
+                return `/${currentRepo.owner}/${currentRepo.name}/user/${username}`;
+            }
+            return `/#user/${username}`;
         }
 
         function isOrgAllowed(org) {
@@ -449,8 +474,7 @@
         async function showProfile(username) {
             document.getElementById('leaderboard-view').classList.add('hidden');
             document.getElementById('profile-view').classList.remove('hidden');
-            const baseUrl = getLeaderboardUrl();
-            window.history.pushState({}, '', `${baseUrl}#user/${username}`);
+            window.history.pushState({}, '', getUserUrl(username));
             
             // Update back button text
             const backText = document.getElementById('back-button-text');
@@ -462,7 +486,7 @@
             const entry = leaderboardData.find(e => e.user.login === username);
             
             try {
-                const response = await fetch(`/api/users/${username}/stats`);
+                const response = await fetch(`${getUserApiBase(username)}/stats`);
                 if (!response.ok) throw new Error('User not found');
                 const data = await response.json();
                 
@@ -511,7 +535,7 @@
 
         async function loadActivityChart(username) {
             try {
-                const response = await fetch(`/api/users/${username}/activity`);
+                const response = await fetch(`${getUserApiBase(username)}/activity`);
                 let labels = [], reviewData = [], xpData = [];
                 
                 if (response.ok) {
@@ -606,7 +630,7 @@
             }
             
             try {
-                const response = await fetch(`/api/users/${username}/reviews?limit=${reviewsPerPage}`);
+                const response = await fetch(`${getUserApiBase(username)}/reviews?limit=${reviewsPerPage}`);
                 if (!response.ok) throw new Error('Failed to load reviews');
                 
                 const reviews = await response.json();
@@ -647,7 +671,7 @@
             loadMoreBtn.disabled = true;
             
             try {
-                const response = await fetch(`/api/users/${currentUsername}/reviews?limit=50`);
+                const response = await fetch(`${getUserApiBase(currentUsername)}/reviews?limit=50`);
                 if (!response.ok) throw new Error('Failed to load reviews');
                 
                 const allReviews = await response.json();
@@ -679,7 +703,7 @@
             const urlInfo = parseUrl();
             
             // Update repo context if changed
-            if (urlInfo.type === 'repo') {
+            if (urlInfo.type === 'repo' || urlInfo.type === 'repo-user') {
                 if (!currentRepo || currentRepo.owner !== urlInfo.owner || currentRepo.name !== urlInfo.name) {
                     if (!isOrgAllowed(urlInfo.owner)) {
                         currentRepo = null;
@@ -736,7 +760,7 @@
             // Parse URL to determine context
             const urlInfo = parseUrl();
             
-            if (urlInfo.type === 'repo') {
+            if (urlInfo.type === 'repo' || urlInfo.type === 'repo-user') {
                 // Check if org is allowed
                 if (!isOrgAllowed(urlInfo.owner)) {
                     currentRepo = null;
