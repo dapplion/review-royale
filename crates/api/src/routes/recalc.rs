@@ -1,10 +1,11 @@
 //! XP recalculation routes
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::State, Json};
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::info;
 
+use crate::error::{ApiError, ApiResult};
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -16,17 +17,12 @@ pub struct RecalcResponse {
     pub users_updated: usize,
 }
 
-pub async fn trigger(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<RecalcResponse>, StatusCode> {
+pub async fn trigger(State(state): State<Arc<AppState>>) -> ApiResult<Json<RecalcResponse>> {
     info!("Recalculation triggered via API");
 
     let stats = processor::recalculate_all_xp(&state.pool)
         .await
-        .map_err(|e| {
-            tracing::error!("Recalculation failed: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(|e| ApiError::Internal(format!("Recalculation failed: {}", e)))?;
 
     Ok(Json(RecalcResponse {
         status: "complete".to_string(),

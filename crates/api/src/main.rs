@@ -9,6 +9,7 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
+mod error;
 mod routes;
 mod state;
 

@@ -2,14 +2,13 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{error, info};
+use tracing::info;
 
+use crate::error::{ApiError, ApiResult, DbResultExt};
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -33,9 +32,10 @@ pub struct BackfillResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct BackfillError {
-    pub error: String,
-    pub retry_after_secs: Option<u64>,
+pub struct BackfillStatus {
+    pub repo: String,
+    pub tracked: bool,
+    pub last_synced_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// Trigger a backfill for a repository
@@ -44,7 +44,7 @@ pub async fn trigger(
     State(state): State<Arc<AppState>>,
     Path((owner, name)): Path<(String, String)>,
     Query(params): Query<BackfillParams>,
-) -> impl IntoResponse {
+) -> ApiResult<Json<BackfillResponse>> {
     info!(
         "Sync requested for {}/{} (max_days: {})",
         owner, name, params.max_days
@@ -57,31 +57,17 @@ pub async fn trigger(
     );
 
     match backfiller.backfill_repo(&owner, &name).await {
-        Ok(progress) => {
-            let response = BackfillResponse {
-                success: true,
-                message: format!("Backfill complete for {}/{}", owner, name),
-                prs_processed: progress.prs_processed,
-                reviews_processed: progress.reviews_processed,
-                users_created: progress.users_created,
-            };
-            (StatusCode::OK, Json(response)).into_response()
-        }
+        Ok(progress) => Ok(Json(BackfillResponse {
+            success: true,
+            message: format!("Backfill complete for {}/{}", owner, name),
+            prs_processed: progress.prs_processed,
+            reviews_processed: progress.reviews_processed,
+            users_created: progress.users_created,
+        })),
         Err(processor::backfill::BackfillError::RateLimited(retry_after)) => {
-            let response = BackfillError {
-                error: "Rate limited by GitHub API".to_string(),
-                retry_after_secs: Some(retry_after),
-            };
-            (StatusCode::TOO_MANY_REQUESTS, Json(response)).into_response()
+            Err(ApiError::RateLimited(retry_after))
         }
-        Err(e) => {
-            error!("Backfill failed: {}", e);
-            let response = BackfillError {
-                error: e.to_string(),
-                retry_after_secs: None,
-            };
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response()
-        }
+        Err(e) => Err(ApiError::GitHub(e.to_string())),
     }
 }
 
@@ -90,35 +76,29 @@ pub async fn trigger(
 pub async fn status(
     State(state): State<Arc<AppState>>,
     Path((owner, name)): Path<(String, String)>,
-) -> impl IntoResponse {
+) -> ApiResult<Json<BackfillStatus>> {
     // Check if repo exists and get last sync time
-    match db::repos::get_by_name(&state.pool, &owner, &name).await {
-        Ok(Some(repo)) => {
+    let repo = db::repos::get_by_name(&state.pool, &owner, &name)
+        .await
+        .db_err()?;
+
+    match repo {
+        Some(repo) => {
             let last_synced = db::repos::get_last_synced_at(&state.pool, repo.id)
                 .await
                 .ok()
                 .flatten();
 
-            Json(serde_json::json!({
-                "repo": format!("{}/{}", owner, name),
-                "tracked": true,
-                "last_synced_at": last_synced,
+            Ok(Json(BackfillStatus {
+                repo: format!("{}/{}", owner, name),
+                tracked: true,
+                last_synced_at: last_synced,
             }))
-            .into_response()
         }
-        Ok(None) => Json(serde_json::json!({
-            "repo": format!("{}/{}", owner, name),
-            "tracked": false,
-            "last_synced_at": Option::<String>::None,
-        }))
-        .into_response(),
-        Err(e) => {
-            error!("Failed to get repo status: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response()
-        }
+        None => Ok(Json(BackfillStatus {
+            repo: format!("{}/{}", owner, name),
+            tracked: false,
+            last_synced_at: None,
+        })),
     }
 }

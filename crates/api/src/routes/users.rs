@@ -2,13 +2,13 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
     Json,
 };
 use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+use crate::error::{ApiResult, DbResultExt, OptionExt};
 use crate::state::AppState;
 use common::models::{User, UserAchievement, UserStats};
 
@@ -60,11 +60,11 @@ fn default_limit() -> i64 {
 pub async fn get(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
-) -> Result<Json<User>, StatusCode> {
+) -> ApiResult<Json<User>> {
     let user = db::users::get_by_login(&state.pool, &username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", username))?;
 
     Ok(Json(user))
 }
@@ -72,27 +72,27 @@ pub async fn get(
 pub async fn stats(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
-) -> Result<Json<UserProfile>, StatusCode> {
+) -> ApiResult<Json<UserProfile>> {
     let user = db::users::get_by_login(&state.pool, &username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", username))?;
 
     // Get achievements
     let achievements = db::achievements::list_for_user(&state.pool, user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     // Get rank (all time for profile)
     let since = Utc::now() - Duration::days(365 * 10);
     let rank = db::leaderboard::get_user_rank(&state.pool, user.id, None, since)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     // Get full user stats
     let stats = db::users::get_stats(&state.pool, user.id, since)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     Ok(Json(UserProfile {
         user,
@@ -105,15 +105,15 @@ pub async fn stats(
 pub async fn activity(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
-) -> Result<Json<Vec<WeeklyActivity>>, StatusCode> {
+) -> ApiResult<Json<Vec<WeeklyActivity>>> {
     let user = db::users::get_by_login(&state.pool, &username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", username))?;
 
     let activity = db::users::get_weekly_activity(&state.pool, user.id, 12)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     let result: Vec<WeeklyActivity> = activity
         .into_iter()
@@ -127,16 +127,16 @@ pub async fn reviews(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
     Query(query): Query<ReviewsQuery>,
-) -> Result<Json<Vec<ReviewItem>>, StatusCode> {
+) -> ApiResult<Json<Vec<ReviewItem>>> {
     let user = db::users::get_by_login(&state.pool, &username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", username))?;
 
     let limit = query.limit.clamp(1, 50); // Cap at 50, min 1
     let reviews = db::users::get_recent_reviews(&state.pool, user.id, limit)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     let result: Vec<ReviewItem> = reviews
         .into_iter()
@@ -159,34 +159,34 @@ pub async fn reviews(
 pub async fn repo_stats(
     State(state): State<Arc<AppState>>,
     Path(path): Path<RepoUserPath>,
-) -> Result<Json<UserProfile>, StatusCode> {
+) -> ApiResult<Json<UserProfile>> {
     // Get repo
     let repo = db::repos::get_by_name(&state.pool, &path.owner, &path.name)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("Repository {}/{} not found", path.owner, path.name))?;
 
     // Get user
     let user = db::users::get_by_login(&state.pool, &path.username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", path.username))?;
 
     // Get achievements (global, not repo-scoped)
     let achievements = db::achievements::list_for_user(&state.pool, user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     // Get rank within this repo
     let since = Utc::now() - Duration::days(365 * 10);
     let rank = db::leaderboard::get_user_rank(&state.pool, user.id, Some(repo.id), since)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     // Get stats scoped to this repo
     let stats = db::users::get_stats_for_repo(&state.pool, user.id, Some(repo.id), since)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     Ok(Json(UserProfile {
         user,
@@ -200,22 +200,22 @@ pub async fn repo_stats(
 pub async fn repo_activity(
     State(state): State<Arc<AppState>>,
     Path(path): Path<RepoUserPath>,
-) -> Result<Json<Vec<WeeklyActivity>>, StatusCode> {
+) -> ApiResult<Json<Vec<WeeklyActivity>>> {
     // Get repo
     let repo = db::repos::get_by_name(&state.pool, &path.owner, &path.name)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("Repository {}/{} not found", path.owner, path.name))?;
 
     // Get user
     let user = db::users::get_by_login(&state.pool, &path.username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", path.username))?;
 
     let activity = db::users::get_weekly_activity_for_repo(&state.pool, user.id, Some(repo.id), 12)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .db_err()?;
 
     let result: Vec<WeeklyActivity> = activity
         .into_iter()
@@ -230,24 +230,24 @@ pub async fn repo_reviews(
     State(state): State<Arc<AppState>>,
     Path(path): Path<RepoUserPath>,
     Query(query): Query<ReviewsQuery>,
-) -> Result<Json<Vec<ReviewItem>>, StatusCode> {
+) -> ApiResult<Json<Vec<ReviewItem>>> {
     // Get repo
     let repo = db::repos::get_by_name(&state.pool, &path.owner, &path.name)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("Repository {}/{} not found", path.owner, path.name))?;
 
     // Get user
     let user = db::users::get_by_login(&state.pool, &path.username)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .db_err()?
+        .not_found(format!("User '{}' not found", path.username))?;
 
     let limit = query.limit.clamp(1, 50);
     let reviews =
         db::users::get_recent_reviews_for_repo(&state.pool, user.id, Some(repo.id), limit)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .db_err()?;
 
     Ok(Json(
         reviews
