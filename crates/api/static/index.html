@@ -69,7 +69,7 @@
             </div>
             <div class="stat-card rounded-xl p-4 border border-white/10">
                 <div class="text-2xl font-bold text-pink-400" id="stat-reviews">-</div>
-                <div class="text-xs text-gray-500 uppercase tracking-wider">Reviews</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Sessions</div>
             </div>
             <div class="stat-card rounded-xl p-4 border border-white/10">
                 <div class="text-2xl font-bold text-blue-400" id="stat-comments">-</div>
@@ -151,7 +151,7 @@
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-reviews" class="text-2xl font-bold text-pink-400">-</div>
-                    <div class="text-xs text-gray-500">Reviews</div>
+                    <div class="text-xs text-gray-500">Sessions</div>
                 </div>
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-prs-reviewed" class="text-2xl font-bold text-orange-400">-</div>
@@ -380,7 +380,7 @@
                                     <span class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</span>
                                     <span class="md:hidden inline-flex items-center px-1.5 py-0.5 rounded bg-gradient-to-r ${levelColor} text-[10px] font-bold flex-shrink-0">${user.level}</span>
                                 </div>
-                                <div class="text-xs text-gray-500">${stats.reviews_given || 0} review${(stats.reviews_given || 0) === 1 ? '' : 's'}</div>
+                                <div class="text-xs text-gray-500">${stats.reviews_given || 0} session${(stats.reviews_given || 0) === 1 ? '' : 's'}</div>
                             </div>
                         </div>
                         <div class="col-span-2 text-center hidden md:block">

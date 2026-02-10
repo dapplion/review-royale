@@ -10,14 +10,15 @@ use crate::sessions::{calculate_session_xp_with_quality, group_reviews_into_sess
 pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sqlx::Error> {
     info!("Starting XP recalculation for all users");
 
-    // Step 1: Reset all user XP to 0 and review xp_earned
-    info!("Resetting all user XP and review xp_earned to 0");
-    sqlx::query("UPDATE users SET xp = 0, level = 1")
+    // Step 1: Reset all user XP, session count, and review xp_earned
+    info!("Resetting all user XP, session counts, and review xp_earned to 0");
+    sqlx::query("UPDATE users SET xp = 0, level = 1, review_sessions = 0")
         .execute(pool)
         .await?;
-    sqlx::query("UPDATE reviews SET xp_earned = 0")
+    // Note: xp_earned column may not exist yet, ignore errors
+    let _ = sqlx::query("UPDATE reviews SET xp_earned = 0")
         .execute(pool)
-        .await?;
+        .await;
 
     // Step 2: Get all reviews and commits
     info!("Fetching all reviews");
@@ -48,6 +49,8 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
     let mut total_sessions = 0;
     let mut total_xp_awarded = 0i64;
     let mut users_updated = std::collections::HashSet::new();
+    let mut user_session_counts: std::collections::HashMap<Uuid, i32> =
+        std::collections::HashMap::new();
 
     for ((pr_id, reviewer_id), pr_reviews) in review_groups {
         // Get commits for this PR
@@ -65,7 +68,11 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
 
         // Group into sessions
         let sessions = group_reviews_into_sessions(pr_reviews, pr_commits.clone());
-        total_sessions += sessions.len();
+        let session_count = sessions.len() as i32;
+        total_sessions += session_count as usize;
+
+        // Track sessions per user
+        *user_session_counts.entry(reviewer_id).or_insert(0) += session_count;
 
         // Calculate XP for each session
         for session in sessions {
@@ -95,6 +102,16 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
                 }
             }
         }
+    }
+
+    // Step 5: Update session counts for all users
+    info!("Updating session counts for {} users", user_session_counts.len());
+    for (user_id, session_count) in &user_session_counts {
+        let _ = sqlx::query("UPDATE users SET review_sessions = $1 WHERE id = $2")
+            .bind(*session_count)
+            .bind(*user_id)
+            .execute(pool)
+            .await;
     }
 
     info!(

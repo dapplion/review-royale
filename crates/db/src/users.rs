@@ -161,7 +161,7 @@ pub async fn get_stats_for_repo(
             ORDER BY r.pr_id, r.submitted_at ASC
         )
         SELECT
-            COUNT(r.id)::int as reviews_given,
+            u.review_sessions::int as reviews_given,
             COUNT(DISTINCT r.pr_id)::int as prs_reviewed,
             COALESCE(SUM(r.comments_count), 0)::int as comments_written,
             COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = $1), 0)::int as first_reviews,
