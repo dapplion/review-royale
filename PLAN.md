@@ -178,8 +178,8 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Individual contributor view (click username → profile page)
   - [x] Score breakdown (why XP is X)
   - [x] XP over time chart (per day/week)
-  - [ ] Recent reviews list
-- [ ] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
+  - [x] Recent reviews list
+- [x] Add "PRs reviewed" distinct count (unique PRs vs total reviews)
 - [ ] **Multi-repo support**: Generalize to any GitHub repo
   - [ ] URL structure: `/:org/:repo` → repo leaderboard
   - [ ] User view: `/:org/:repo/user/:username` → user profile scoped to that repo
