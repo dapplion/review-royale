@@ -190,7 +190,7 @@ Level = floor(sqrt(XP / 100)) + 1
     - Private repos → 404 / show nothing (prevent leaking internal repos)
     - Other orgs (public) → "Request access" page with link to Lion's Twitter
     - Goal: open to all orgs eventually, closed for now for safety
-- [ ] Test coverage
+- [x] Test coverage
 - [ ] Error handling improvements
 
 ### M5: Review Quality Analysis
