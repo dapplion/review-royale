@@ -131,7 +131,12 @@ mod tests {
         // For any level, xp_for_level then calculate_level should return that level
         for level in 1..=20 {
             let xp = xp_for_level(level);
-            assert_eq!(calculate_level(xp), level, "Round trip failed for level {}", level);
+            assert_eq!(
+                calculate_level(xp),
+                level,
+                "Round trip failed for level {}",
+                level
+            );
         }
     }
 }
