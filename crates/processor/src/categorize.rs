@@ -216,8 +216,9 @@ pub async fn categorize_batch(
         .unwrap_or_default();
 
     // Parse the JSON response
-    let batch_result: BatchResult = serde_json::from_str(&content)
-        .map_err(|e| CategorizeError::Parse(format!("JSON parse error: {} - content: {}", e, content)))?;
+    let batch_result: BatchResult = serde_json::from_str(&content).map_err(|e| {
+        CategorizeError::Parse(format!("JSON parse error: {} - content: {}", e, content))
+    })?;
 
     // Update database
     for classification in batch_result.results {
@@ -247,7 +248,9 @@ pub async fn categorize_batch(
     }
 
     // Count skipped (no classification returned)
-    stats.skipped = comments.len().saturating_sub(stats.processed + stats.errors);
+    stats.skipped = comments
+        .len()
+        .saturating_sub(stats.processed + stats.errors);
 
     info!(
         "Categorization complete: {} processed, {} skipped, {} errors",

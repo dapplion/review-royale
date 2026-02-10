@@ -77,7 +77,10 @@ pub async fn trigger(
 
     let batch_size = query.limit.unwrap_or(50).min(100);
 
-    info!("AI categorization triggered via API (batch_size={})", batch_size);
+    info!(
+        "AI categorization triggered via API (batch_size={})",
+        batch_size
+    );
 
     let stats = processor::categorize_batch(&state.pool, api_key, batch_size)
         .await
