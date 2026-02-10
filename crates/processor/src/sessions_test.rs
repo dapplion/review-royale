@@ -322,8 +322,7 @@ mod tests {
         };
 
         // Commits pushed 30 min before review
-        let commit_before =
-            Some(Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap());
+        let commit_before = Some(Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap());
 
         let xp = calculate_session_xp(&session, commit_before);
         // 10 base + 3*5 comments + 10 fast (<1h) = 35 XP
@@ -351,8 +350,7 @@ mod tests {
         };
 
         // Commits pushed 2 hours before review
-        let commit_before =
-            Some(Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap());
+        let commit_before = Some(Utc.with_ymd_and_hms(2026, 1, 1, 10, 0, 0).unwrap());
 
         let xp = calculate_session_xp(&session, commit_before);
         // 10 base + 3*5 comments (no fast bonus) = 25 XP
@@ -438,6 +436,9 @@ mod tests {
 
         let xp = calculate_session_xp(&sessions[0], None);
         // 10 base + 8*5 comments + 5 thorough (>5 comments) = 55 XP
-        assert_eq!(xp, 55, "Jimmy's session = 55 XP (base + comments + thorough)");
+        assert_eq!(
+            xp, 55,
+            "Jimmy's session = 55 XP (base + comments + thorough)"
+        );
     }
 }
