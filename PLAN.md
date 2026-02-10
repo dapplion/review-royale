@@ -219,8 +219,8 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Quality score per comment (1-10 scale)
 - [x] Quality-weighted XP bonuses
 
-### M6: Mattermost Bot
-- [ ] Leaderboard command
+### M6: Discord Bot
+- [x] Leaderboard command (with period filter: week/month/all)
 - [ ] Weekly digest
 - [ ] Achievement notifications
 - [ ] Roast command
