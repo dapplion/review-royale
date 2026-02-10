@@ -107,3 +107,12 @@ pub async fn set_last_synced_at(
         .await?;
     Ok(())
 }
+
+/// Reset last sync timestamp for a repository (for force backfill)
+pub async fn reset_last_synced_at(pool: &PgPool, repo_id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE repositories SET last_synced_at = NULL WHERE id = $1")
+        .bind(repo_id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}

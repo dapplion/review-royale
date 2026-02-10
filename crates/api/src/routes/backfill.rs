@@ -13,9 +13,12 @@ use crate::state::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct BackfillParams {
-    /// Maximum age in days to look back on first sync (default: 365)
+    /// Maximum age in days to look back (default: 365)
     #[serde(default = "default_max_days")]
     pub max_days: u32,
+    /// Force full backfill, ignoring last_synced_at
+    #[serde(default)]
+    pub force: bool,
 }
 
 fn default_max_days() -> u32 {
@@ -46,9 +49,21 @@ pub async fn trigger(
     Query(params): Query<BackfillParams>,
 ) -> ApiResult<Json<BackfillResponse>> {
     info!(
-        "Sync requested for {}/{} (max_days: {})",
-        owner, name, params.max_days
+        "Sync requested for {}/{} (max_days: {}, force: {})",
+        owner, name, params.max_days, params.force
     );
+
+    // If force=true, reset last_synced_at to trigger full backfill
+    if params.force {
+        if let Some(repo) = db::repos::get_by_name(&state.pool, &owner, &name)
+            .await
+            .ok()
+            .flatten()
+        {
+            info!("Force backfill: resetting last_synced_at for {}/{}", owner, name);
+            let _ = db::repos::reset_last_synced_at(&state.pool, repo.id).await;
+        }
+    }
 
     let backfiller = processor::Backfiller::new(
         state.pool.clone(),
