@@ -10,9 +10,12 @@ use crate::sessions::{calculate_session_xp_with_quality, group_reviews_into_sess
 pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sqlx::Error> {
     info!("Starting XP recalculation for all users");
 
-    // Step 1: Reset all user XP to 0
-    info!("Resetting all user XP to 0");
+    // Step 1: Reset all user XP to 0 and review xp_earned
+    info!("Resetting all user XP and review xp_earned to 0");
     sqlx::query("UPDATE users SET xp = 0, level = 1")
+        .execute(pool)
+        .await?;
+    sqlx::query("UPDATE reviews SET xp_earned = 0")
         .execute(pool)
         .await?;
 
@@ -81,6 +84,15 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
                 let _ = db::users::add_xp(pool, reviewer_id, xp).await;
                 total_xp_awarded += xp;
                 users_updated.insert(reviewer_id);
+
+                // Store XP on the first review of the session for period filtering
+                if let Some(first_review) = session.reviews.first() {
+                    let _ = sqlx::query("UPDATE reviews SET xp_earned = $1 WHERE id = $2")
+                        .bind(xp as i32)
+                        .bind(first_review.id)
+                        .execute(pool)
+                        .await;
+                }
             }
         }
     }
