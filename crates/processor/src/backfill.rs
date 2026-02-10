@@ -229,7 +229,7 @@ impl Backfiller {
             }
         };
 
-        // Count comments per review ID
+        // Count comments per review ID and collect for storage
         let mut comment_counts: std::collections::HashMap<i64, i32> =
             std::collections::HashMap::new();
         for comment in &comments {
@@ -237,6 +237,10 @@ impl Backfiller {
                 *comment_counts.entry(review_id).or_insert(0) += 1;
             }
         }
+
+        // Map GitHub review IDs to our DB UUIDs (populated as we process reviews)
+        let mut review_id_map: std::collections::HashMap<i64, uuid::Uuid> =
+            std::collections::HashMap::new();
 
         let mut reviews_count = 0u32;
         let mut first_review_at = None;
@@ -289,8 +293,10 @@ impl Backfiller {
             )
             .await
             {
-                Ok(_) => {
+                Ok(db_review) => {
                     reviews_count += 1;
+                    // Track mapping for comment storage
+                    review_id_map.insert(review.id, db_review.id);
 
                     // Track first review (by submitted_at)
                     if first_review_at.is_none() || submitted_at < first_review_at.unwrap() {
@@ -311,6 +317,47 @@ impl Backfiller {
             if db_pr.first_review_at.is_none() {
                 let _ = db::prs::set_first_review(&self.pool, db_pr.id, first_at).await;
             }
+        }
+
+        // Store review comments for AI categorization (M5)
+        for comment in comments {
+            // Skip comments without a user
+            let Some(ref user) = comment.user else {
+                continue;
+            };
+
+            // Get or create user
+            let (commenter, created) = db::users::upsert_returning_created(
+                &self.pool,
+                user.id,
+                &user.login,
+                user.avatar_url.as_deref(),
+            )
+            .await?;
+            if created {
+                new_users += 1;
+            }
+
+            // Find the review ID if this comment belongs to a review
+            let review_uuid = comment
+                .pull_request_review_id
+                .and_then(|gh_id| review_id_map.get(&gh_id).copied());
+
+            // Insert comment
+            let _ = db::review_comments::insert(
+                &self.pool,
+                review_uuid,
+                db_pr.id,
+                commenter.id,
+                comment.id,
+                &comment.body,
+                comment.path.as_deref(),
+                comment.diff_hunk.as_deref(),
+                comment.line,
+                comment.in_reply_to_id,
+                comment.created_at,
+            )
+            .await;
         }
 
         Ok((reviews_count, new_users))

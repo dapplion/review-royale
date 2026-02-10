@@ -73,6 +73,10 @@ pub struct GithubReviewComment {
     pub body: String,
     pub created_at: DateTime<Utc>,
     pub pull_request_review_id: Option<i64>,
+    pub path: Option<String>,
+    pub diff_hunk: Option<String>,
+    pub line: Option<i32>,
+    pub in_reply_to_id: Option<i64>,
 }
 
 /// Commit as returned by GitHub API

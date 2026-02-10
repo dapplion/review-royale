@@ -194,7 +194,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Error handling improvements
 
 ### M5: Review Quality Analysis
-- [ ] Store inline review comments (new `review_comments` table)
+- [x] Store inline review comments (new `review_comments` table)
 - [ ] AI categorization (cosmetic/logic/structural/nit/question)
 - [ ] Quality score per comment
 - [ ] Quality-weighted XP bonuses
