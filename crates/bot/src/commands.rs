@@ -303,7 +303,7 @@ async fn weekly_digest(
     }
 
     // Calculate totals
-    let total_reviews: i64 = entries.iter().map(|e| e.stats.reviews_given).sum();
+    let total_reviews: i64 = entries.iter().map(|e| e.stats.reviews_given as i64).sum();
     let total_xp: i64 = entries.iter().map(|e| e.score).sum();
     let total_comments: i64 = entries.iter().map(|e| e.stats.comments_written as i64).sum();
 
