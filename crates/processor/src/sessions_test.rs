@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use chrono::{TimeZone, Utc};
+    use crate::sessions::{calculate_session_xp, group_reviews_into_sessions, ReviewSession};
+    use chrono::{DateTime, TimeZone, Utc};
     use common::models::{Commit, Review, ReviewState};
     use uuid::Uuid;
 
