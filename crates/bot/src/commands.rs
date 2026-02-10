@@ -28,6 +28,7 @@ pub async fn handle(
             let username = parts.get(1).copied();
             roast(ctx, msg, pool, username).await
         }
+        Some(&"digest") | Some(&"weekly") => weekly_digest(ctx, msg, pool).await,
         Some(&"help") => help(ctx, msg).await,
         _ => {
             msg.reply(&ctx.http, "Unknown command. Try `!rr help`")
@@ -283,6 +284,84 @@ fn generate_roast(
     selected.join("\n\n")
 }
 
+async fn weekly_digest(
+    ctx: &Context,
+    msg: &Message,
+    pool: &PgPool,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    info!("Weekly digest command from {}", msg.author.name);
+
+    let since = Utc::now() - Duration::days(7);
+
+    // Get top 5 for the week
+    let entries = db::leaderboard::get_leaderboard(pool, None, since, 5).await?;
+
+    if entries.is_empty() {
+        msg.reply(&ctx.http, "📭 No reviews this week. Everyone on vacation?")
+            .await?;
+        return Ok(());
+    }
+
+    // Calculate totals
+    let total_reviews: i64 = entries.iter().map(|e| e.stats.reviews_given).sum();
+    let total_xp: i64 = entries.iter().map(|e| e.score).sum();
+    let total_comments: i64 = entries.iter().map(|e| e.stats.total_comments).sum();
+
+    let mut response = String::from("📊 **Weekly Digest** 📊\n");
+    response.push_str(&format!(
+        "_{}_ to _{}_\n\n",
+        since.format("%b %d"),
+        Utc::now().format("%b %d")
+    ));
+
+    // Champion spotlight
+    if let Some(champion) = entries.first() {
+        response.push_str(&format!(
+            "👑 **Champion of the Week:** {} ({} XP)\n\n",
+            champion.user.login, champion.score
+        ));
+    }
+
+    // Top 5 leaderboard
+    response.push_str("**🏆 Top Reviewers**\n");
+    for entry in &entries {
+        let medal = match entry.rank {
+            1 => "🥇",
+            2 => "🥈",
+            3 => "🥉",
+            _ => "▫️",
+        };
+        response.push_str(&format!(
+            "{} {} — {} XP ({} reviews)\n",
+            medal, entry.user.login, entry.score, entry.stats.reviews_given
+        ));
+    }
+
+    // Weekly stats
+    response.push_str(&format!(
+        "\n**📈 Week in Numbers**\n\
+        • {} reviews submitted\n\
+        • {} XP earned\n\
+        • {} comments written\n",
+        total_reviews, total_xp, total_comments
+    ));
+
+    // Fun closer
+    let closer = if total_reviews > 100 {
+        "🔥 Absolute fire week!"
+    } else if total_reviews > 50 {
+        "💪 Solid effort, team!"
+    } else if total_reviews > 20 {
+        "📝 Respectable. Keep it up!"
+    } else {
+        "😴 Quiet week... PRs are waiting!"
+    };
+    response.push_str(&format!("\n{}", closer));
+
+    msg.reply(&ctx.http, response).await?;
+    Ok(())
+}
+
 async fn help(
     ctx: &Context,
     msg: &Message,
@@ -291,6 +370,7 @@ async fn help(
         `!rr lb [period]` — Leaderboard (week/month/all, default: month)\n\
         `!rr stats [username]` — Show user stats\n\
         `!rr roast [username]` — Roast a reviewer 🔥\n\
+        `!rr digest` — Weekly digest summary 📊\n\
         `!rr help` — Show this help\n\n\
         **Scoring:** Reviews earn XP based on depth and speed. More comments = more XP! 🔥";
 
