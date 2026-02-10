@@ -212,6 +212,58 @@ Level = floor(sqrt(XP / 100)) + 1
 - [ ] User profile pages
 - [ ] Filter bots from leaderboard
 
+## Development Workflow: AI-Assisted UI Iteration
+
+Visual feedback loop for frontend development:
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Render    │───▶│ Screenshot  │───▶│   Analyze   │
+│ (headless)  │    │  (browser)  │    │  (vision)   │
+└─────────────┘    └─────────────┘    └─────────────┘
+       ▲                                     │
+       │                                     ▼
+       │           ┌─────────────┐    ┌─────────────┐
+       └───────────│   Deploy    │◀───│    Edit     │
+                   │  (fly.io)   │    │ (HTML/CSS)  │
+                   └─────────────┘    └─────────────┘
+```
+
+### The Loop
+
+1. **Render** — Playwright loads the live page (or local dev server)
+2. **Screenshot** — Capture viewport at target resolution(s)
+3. **Analyze** — Vision model critiques layout, spacing, colors, UX
+4. **Edit** — Modify frontend code based on feedback
+5. **Deploy** — Push changes, repeat
+
+### Use Cases
+
+- **Responsive checks**: Screenshot at 375px, 768px, 1440px widths
+- **Accessibility audit**: Vision model spots contrast issues, missing focus states
+- **Design matching**: "Make it look more like [reference]"
+- **Visual regression**: Compare before/after screenshots
+- **Polish passes**: Iterate on spacing, alignment, visual hierarchy
+
+### Commands
+
+```bash
+# Screenshot current production
+browser screenshot --url https://review-royale.fly.dev --width 1440
+
+# Mobile viewport
+browser screenshot --url https://review-royale.fly.dev --width 375
+
+# Full page capture
+browser screenshot --url https://review-royale.fly.dev --fullPage
+```
+
+### Limitations
+
+- ~30-60s per iteration (render + analyze + edit)
+- Vision models can miss subtle CSS issues
+- Best for polish, not structural changes
+
 ## TODOs Before Launch
 
 ### XP Recalculation
