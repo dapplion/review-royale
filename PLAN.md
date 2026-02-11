@@ -227,7 +227,7 @@ Level = floor(sqrt(XP / 100)) + 1
 
 ### M7: Advanced Features
 - [x] Achievement unlock logic (in processor/achievements.rs, runs on recalculate)
-- [ ] Seasons (monthly/quarterly resets)
+- [x] Seasons (monthly/quarterly resets) - DB module + API endpoints
 - [ ] Team leaderboards
 - [x] User profile pages (via M4 Individual contributor view)
 - [x] Filter bots from leaderboard

@@ -103,6 +103,16 @@ async fn main() -> anyhow::Result<()> {
             "/api/categorize",
             get(routes::categorize::stats).post(routes::categorize::trigger),
         )
+        .route("/api/seasons", get(routes::seasons::list))
+        .route("/api/seasons/current", get(routes::seasons::current))
+        .route(
+            "/api/seasons/:number/leaderboard",
+            get(routes::seasons::leaderboard),
+        )
+        .route(
+            "/api/seasons/ensure",
+            axum::routing::post(routes::seasons::ensure_current),
+        )
         .with_state(state);
 
     // Build full router with static file serving

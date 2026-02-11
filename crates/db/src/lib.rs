@@ -11,6 +11,7 @@ pub mod prs;
 pub mod repos;
 pub mod review_comments;
 pub mod reviews;
+pub mod seasons;
 pub mod users;
 
 #[cfg(test)]
