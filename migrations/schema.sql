@@ -149,6 +149,28 @@ CREATE TABLE IF NOT EXISTS season_scores (
     PRIMARY KEY (season_id, user_id)
 );
 
+-- Teams
+CREATE TABLE IF NOT EXISTS teams (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    color TEXT DEFAULT '#6366f1',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_teams_name ON teams(name);
+
+-- Team Members
+CREATE TABLE IF NOT EXISTS team_members (
+    team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (team_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
+
 -- Default achievements
 INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUES
     ('first_review', 'First Blood', 'Submit your first review', '🩸', 50, 'common'),

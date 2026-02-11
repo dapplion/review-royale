@@ -113,6 +113,24 @@ async fn main() -> anyhow::Result<()> {
             "/api/seasons/ensure",
             axum::routing::post(routes::seasons::ensure_current),
         )
+        // Team routes
+        .route(
+            "/api/teams",
+            get(routes::teams::list).post(routes::teams::create),
+        )
+        .route("/api/teams/leaderboard", get(routes::teams::leaderboard))
+        .route(
+            "/api/teams/:name",
+            get(routes::teams::get).delete(routes::teams::delete),
+        )
+        .route(
+            "/api/teams/:name/members",
+            axum::routing::post(routes::teams::add_member),
+        )
+        .route(
+            "/api/teams/:name/members/:username",
+            axum::routing::delete(routes::teams::remove_member),
+        )
         .with_state(state);
 
     // Build full router with static file serving

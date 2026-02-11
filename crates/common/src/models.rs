@@ -294,3 +294,23 @@ pub struct LeaderboardEntry {
     pub score: i64,
     pub stats: UserStats,
 }
+
+/// A team of reviewers
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Team {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub color: String,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Team leaderboard entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TeamLeaderboardEntry {
+    pub rank: i32,
+    pub team: Team,
+    pub score: i64,
+    pub member_count: i32,
+    pub reviews_count: i32,
+}

@@ -127,7 +127,9 @@ pub async fn create_monthly_season(
     } else {
         (year, month + 1)
     };
-    let ends_at = Utc.with_ymd_and_hms(end_year, end_month, 1, 0, 0, 0).unwrap();
+    let ends_at = Utc
+        .with_ymd_and_hms(end_year, end_month, 1, 0, 0, 0)
+        .unwrap();
 
     // Season number: YYYYMM format
     let number = year * 100 + month as i32;

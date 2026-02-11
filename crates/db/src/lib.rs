@@ -12,6 +12,7 @@ pub mod repos;
 pub mod review_comments;
 pub mod reviews;
 pub mod seasons;
+pub mod teams;
 pub mod users;
 
 #[cfg(test)]

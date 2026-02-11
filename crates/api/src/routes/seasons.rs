@@ -9,7 +9,7 @@ use common::models::Season;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::error::ApiError;
+use crate::error::{ApiError, ApiResult, DbResultExt};
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -29,16 +29,20 @@ pub struct SeasonsResponse {
 }
 
 /// List all seasons + current
-pub async fn list(State(state): State<Arc<AppState>>) -> Result<Json<SeasonsResponse>, ApiError> {
-    let seasons = db::seasons::get_all_seasons(&state.pool).await?;
-    let current = db::seasons::get_current_season(&state.pool).await?;
+pub async fn list(State(state): State<Arc<AppState>>) -> ApiResult<Json<SeasonsResponse>> {
+    let seasons = db::seasons::get_all_seasons(&state.pool).await.db_err()?;
+    let current = db::seasons::get_current_season(&state.pool)
+        .await
+        .db_err()?;
 
     Ok(Json(SeasonsResponse { seasons, current }))
 }
 
 /// Get current season
-pub async fn current(State(state): State<Arc<AppState>>) -> Result<Json<Option<Season>>, ApiError> {
-    let season = db::seasons::get_current_season(&state.pool).await?;
+pub async fn current(State(state): State<Arc<AppState>>) -> ApiResult<Json<Option<Season>>> {
+    let season = db::seasons::get_current_season(&state.pool)
+        .await
+        .db_err()?;
     Ok(Json(season))
 }
 
@@ -47,13 +51,15 @@ pub async fn leaderboard(
     State(state): State<Arc<AppState>>,
     Path(number): Path<i32>,
     Query(params): Query<LeaderboardParams>,
-) -> Result<Json<serde_json::Value>, ApiError> {
+) -> ApiResult<Json<serde_json::Value>> {
     let season = db::seasons::get_season_by_number(&state.pool, number)
-        .await?
+        .await
+        .db_err()?
         .ok_or_else(|| ApiError::NotFound(format!("Season {} not found", number)))?;
 
-    let entries =
-        db::seasons::get_season_leaderboard(&state.pool, season.id, None, params.limit).await?;
+    let entries = db::seasons::get_season_leaderboard(&state.pool, season.id, None, params.limit)
+        .await
+        .db_err()?;
 
     Ok(Json(serde_json::json!({
         "season": season,
@@ -64,7 +70,9 @@ pub async fn leaderboard(
 /// Create/ensure current month's season exists
 pub async fn ensure_current(
     State(state): State<Arc<AppState>>,
-) -> Result<(StatusCode, Json<Season>), ApiError> {
-    let season = db::seasons::ensure_current_season(&state.pool).await?;
+) -> ApiResult<(StatusCode, Json<Season>)> {
+    let season = db::seasons::ensure_current_season(&state.pool)
+        .await
+        .db_err()?;
     Ok((StatusCode::OK, Json(season)))
 }
