@@ -9,6 +9,9 @@ pub mod scores;
 pub mod sessions;
 pub mod sync;
 
+#[cfg(test)]
+mod tests;
+
 pub use backfill::{BackfillError, Backfiller};
 pub use categorize::{
     categorize_batch, get_stats as get_category_stats, CategorizeError, CategorizeStats,

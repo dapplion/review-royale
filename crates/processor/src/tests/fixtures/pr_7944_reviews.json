@@ -1,0 +1,86 @@
+[
+  {
+    "id": 3509174692,
+    "state": "COMMENTED",
+    "submitted_at": "2025-11-26T06:41:30Z",
+    "body": "🤖 Bug in `testing/simulator/src/basic_sim.rs:178`: The second line overwrites the division result and uses `seconds_per_slot` (seconds) instead of `slot_duration_ms` (milliseconds):\n\n```rust\nspec.slot_duration_ms /= speed_up_factor;\nspec.slot_duration_ms = max(1_000, spec.seconds_per_slot);  // ❌ Wrong variable\n```\n\nShould be:\n```rust\nspec.slot_duration_ms /= speed_up_factor;\nspec.slot_duration_ms = max(1_000, spec.slot_duration_ms);\n```\n\nNote that `fallback_sim.rs:184-185` has the correct implementation.\n\n---\n\n🤖 In `consensus/types/src/chain_spec.rs` (`get_slot_component_duration` method): Should we avoid `.expect()` here? This gets called in hot paths for every attestation/sync committee timing check. While overflow is unlikely with valid basis points, could we either return `Result<Duration, ArithError>` or add a comment explaining why the panic is safe? (e.g., the max intermediate value with mainnet parameters is far from u64::MAX)\n\n---\n\n🤖 In `beacon_node/network/src/network_beacon_processor/sync_methods.rs:306`: Stale comment reference mentions `slot_clock.single_lookup_delay()` which was removed in this PR. Should update or remove this reference.\n\n---\n\n🤖 General question: Are there plans to deprecate `seconds_per_slot`? Both fields now exist in `ChainSpec`. Should `seconds_per_slot` be marked deprecated or documented as maintained only for config backward compatibility?"
+  },
+  {
+    "id": 3509181429,
+    "state": "COMMENTED",
+    "submitted_at": "2025-11-26T06:42:53Z",
+    "body": ""
+  },
+  {
+    "id": 3509186117,
+    "state": "COMMENTED",
+    "submitted_at": "2025-11-26T06:44:04Z",
+    "body": ""
+  },
+  {
+    "id": 3649337113,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-12T06:38:54Z",
+    "body": ""
+  },
+  {
+    "id": 3649348696,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-12T06:44:07Z",
+    "body": ""
+  },
+  {
+    "id": 3726118414,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:14:30Z",
+    "body": ""
+  },
+  {
+    "id": 3726128162,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:21:01Z",
+    "body": ""
+  },
+  {
+    "id": 3726155303,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:33:57Z",
+    "body": ""
+  },
+  {
+    "id": 3726186834,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:48:54Z",
+    "body": ""
+  },
+  {
+    "id": 3726189187,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:50:30Z",
+    "body": ""
+  },
+  {
+    "id": 3726189392,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:50:40Z",
+    "body": ""
+  },
+  {
+    "id": 3726196954,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T03:55:40Z",
+    "body": ""
+  },
+  {
+    "id": 3726302708,
+    "state": "COMMENTED",
+    "submitted_at": "2026-01-30T04:46:37Z",
+    "body": ""
+  },
+  {
+    "id": 3726308374,
+    "state": "CHANGES_REQUESTED",
+    "submitted_at": "2026-01-30T04:49:27Z",
+    "body": "Hey @eserilev \n\nI've reviewed the PR, please see my comments - there are a few issues but most of the changes look safe and I think we're close to merging this! \n\nLet me know if you'd like to discuss on any of the comments or if they're unclear.  "
+  }
+]

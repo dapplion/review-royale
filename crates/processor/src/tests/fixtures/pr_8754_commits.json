@@ -1,0 +1,152 @@
+[
+  {
+    "sha": "72f0a7b",
+    "date": "2026-01-29T20:59:52Z",
+    "message": "move commitments to bid"
+  },
+  {
+    "sha": "dee394c",
+    "date": "2026-01-30T05:23:21Z",
+    "message": "Lint fixes"
+  },
+  {
+    "sha": "e1439e6",
+    "date": "2026-01-30T19:08:11Z",
+    "message": "Use module level imports"
+  },
+  {
+    "sha": "047599a",
+    "date": "2026-01-30T22:36:56Z",
+    "message": "Fix CI"
+  },
+  {
+    "sha": "bf1fb7e",
+    "date": "2026-02-03T00:29:31Z",
+    "message": "Add testing for Gloas block body"
+  },
+  {
+    "sha": "7f51c7d",
+    "date": "2026-02-03T00:29:55Z",
+    "message": "Pin nightly tests"
+  },
+  {
+    "sha": "1569123",
+    "date": "2026-02-03T04:09:01Z",
+    "message": "Merge branch 'gloas-move-commitments-to-bid' into unstable"
+  },
+  {
+    "sha": "4c9fa24",
+    "date": "2026-02-03T07:22:00Z",
+    "message": "Block and bid production"
+  },
+  {
+    "sha": "5bb7ebb",
+    "date": "2026-02-03T19:39:04Z",
+    "message": "Merge branch 'unstable' of https://github.com/sigp/lighthouse into gloas-block-and-bid-production"
+  },
+  {
+    "sha": "7cf4eb0",
+    "date": "2026-02-04T00:13:07Z",
+    "message": "Add new block production endpoint"
+  },
+  {
+    "sha": "50dde15",
+    "date": "2026-02-04T01:27:58Z",
+    "message": "Add payload to a cache for later signing"
+  },
+  {
+    "sha": "2d321f6",
+    "date": "2026-02-04T02:51:53Z",
+    "message": "Add get payload envelope route"
+  },
+  {
+    "sha": "1ed80fa",
+    "date": "2026-02-04T03:37:09Z",
+    "message": "Fetch and sign payload envelope"
+  },
+  {
+    "sha": "2585384",
+    "date": "2026-02-04T04:28:28Z",
+    "message": "Publish payload"
+  },
+  {
+    "sha": "1c1e6dd",
+    "date": "2026-02-04T04:28:41Z",
+    "message": "Fmt"
+  },
+  {
+    "sha": "1e69734",
+    "date": "2026-02-04T04:47:42Z",
+    "message": "resolve merge conflicts"
+  },
+  {
+    "sha": "96d02ad",
+    "date": "2026-02-04T04:52:44Z",
+    "message": "Resolve merge conflicts"
+  },
+  {
+    "sha": "75bb428",
+    "date": "2026-02-04T05:19:58Z",
+    "message": "Resolve some TODOs"
+  },
+  {
+    "sha": "f9bfaf9",
+    "date": "2026-02-04T23:53:13Z",
+    "message": "Move block production to gloas file (no logic change)."
+  },
+  {
+    "sha": "339ba6e",
+    "date": "2026-02-05T01:25:40Z",
+    "message": "Move gloas http logic to modules."
+  },
+  {
+    "sha": "62f9648",
+    "date": "2026-02-05T02:47:40Z",
+    "message": "FMT"
+  },
+  {
+    "sha": "0a098f2",
+    "date": "2026-02-10T03:33:12Z",
+    "message": "Remove unecessary fields"
+  },
+  {
+    "sha": "a311b1a",
+    "date": "2026-02-10T03:34:40Z",
+    "message": "Use local builder index const"
+  },
+  {
+    "sha": "081efc7",
+    "date": "2026-02-10T04:42:47Z",
+    "message": "Fix sig domain"
+  },
+  {
+    "sha": "08c4653",
+    "date": "2026-02-10T04:43:27Z",
+    "message": "Update beacon_node/http_api/src/validator/execution_payload_bid.rs"
+  },
+  {
+    "sha": "47500e2",
+    "date": "2026-02-10T04:43:36Z",
+    "message": "Merge branch 'gloas-block-and-bid-production' of https://github.com/eserilev/lighthouse into gloas-block-and-bid-production"
+  },
+  {
+    "sha": "8a53da9",
+    "date": "2026-02-10T04:46:24Z",
+    "message": "Add unexpected error variant"
+  },
+  {
+    "sha": "525bed7",
+    "date": "2026-02-10T04:52:21Z",
+    "message": "add consts"
+  },
+  {
+    "sha": "ed5cc3b",
+    "date": "2026-02-10T04:55:39Z",
+    "message": "add const"
+  },
+  {
+    "sha": "3eb4db2",
+    "date": "2026-02-10T04:56:47Z",
+    "message": "Instrument"
+  }
+]

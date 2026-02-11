@@ -1,0 +1,152 @@
+[
+  {
+    "sha": "372f9bc",
+    "date": "2025-08-20T12:29:40Z",
+    "message": "chore: update minimal_config to latest spec"
+  },
+  {
+    "sha": "cfac954",
+    "date": "2025-08-26T09:14:49Z",
+    "message": "Merge branch 'unstable' into patch-3"
+  },
+  {
+    "sha": "b5441a5",
+    "date": "2025-08-26T19:04:07Z",
+    "message": "and slot component duration fn"
+  },
+  {
+    "sha": "63720c5",
+    "date": "2025-08-26T20:18:16Z",
+    "message": "slot duration ms changes"
+  },
+  {
+    "sha": "8828d9d",
+    "date": "2025-08-26T20:18:28Z",
+    "message": "cleanup"
+  },
+  {
+    "sha": "56f930a",
+    "date": "2025-08-26T20:20:22Z",
+    "message": "Merge"
+  },
+  {
+    "sha": "17488cb",
+    "date": "2025-08-26T20:42:20Z",
+    "message": "fixes"
+  },
+  {
+    "sha": "6bf8265",
+    "date": "2025-08-26T21:32:49Z",
+    "message": "v1.6.0-alpha.5 test"
+  },
+  {
+    "sha": "6c4c9b6",
+    "date": "2025-08-26T21:33:51Z",
+    "message": "Merge branch 'patch-3' into slot_duration_ms"
+  },
+  {
+    "sha": "aadc881",
+    "date": "2025-09-25T15:09:08Z",
+    "message": "Resolve merge conflicts"
+  },
+  {
+    "sha": "5e76d27",
+    "date": "2025-09-25T15:36:05Z",
+    "message": "Fix ci"
+  },
+  {
+    "sha": "5889b38",
+    "date": "2025-09-25T15:41:52Z",
+    "message": "FMT"
+  },
+  {
+    "sha": "561040d",
+    "date": "2025-10-04T02:45:24Z",
+    "message": "Merge conflicts"
+  },
+  {
+    "sha": "9dc3b8e",
+    "date": "2025-10-04T03:20:52Z",
+    "message": "smol fixes"
+  },
+  {
+    "sha": "623705d",
+    "date": "2025-10-04T04:00:10Z",
+    "message": "Smol fixes"
+  },
+  {
+    "sha": "55b9fee",
+    "date": "2025-10-06T18:54:46Z",
+    "message": "Temp test fixes"
+  },
+  {
+    "sha": "389c536",
+    "date": "2025-10-06T19:55:44Z",
+    "message": "Fix EF Tests"
+  },
+  {
+    "sha": "ea60804",
+    "date": "2025-10-06T23:56:47Z",
+    "message": "Fix doppleganger test"
+  },
+  {
+    "sha": "f03a3c3",
+    "date": "2025-10-07T00:08:42Z",
+    "message": "Fix test"
+  },
+  {
+    "sha": "d4c0407",
+    "date": "2025-10-07T17:19:10Z",
+    "message": "Fix test"
+  },
+  {
+    "sha": "70aaeac",
+    "date": "2025-10-07T18:26:01Z",
+    "message": "Fix doppleganger"
+  },
+  {
+    "sha": "a4a4410",
+    "date": "2025-10-08T04:51:25Z",
+    "message": "Refactor"
+  },
+  {
+    "sha": "7241ceb",
+    "date": "2025-10-08T20:40:34Z",
+    "message": "Refactor"
+  },
+  {
+    "sha": "7a88f4a",
+    "date": "2025-10-08T20:54:40Z",
+    "message": "Fmt"
+  },
+  {
+    "sha": "d505a75",
+    "date": "2025-10-08T20:55:29Z",
+    "message": "Fmt"
+  },
+  {
+    "sha": "7e0a964",
+    "date": "2025-10-08T21:19:14Z",
+    "message": "Fix"
+  },
+  {
+    "sha": "78feefd",
+    "date": "2025-10-08T21:41:32Z",
+    "message": "Refactor"
+  },
+  {
+    "sha": "c408057",
+    "date": "2025-10-08T21:54:04Z",
+    "message": "Clean up"
+  },
+  {
+    "sha": "2ef43e7",
+    "date": "2025-10-08T21:57:46Z",
+    "message": "Remove TODOs"
+  },
+  {
+    "sha": "429569e",
+    "date": "2025-10-09T02:29:04Z",
+    "message": "Update more configs"
+  }
+]
