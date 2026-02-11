@@ -188,7 +188,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Production database
 - [x] Backfill sigp/lighthouse (365 days)
 
-### M4: Polish (Current)
+### M4: Polish ✅
 - [x] Track comment counts per review
 - [x] Track first reviews (who reviewed first)
 - [x] Sort leaderboard by XP (not review count)
