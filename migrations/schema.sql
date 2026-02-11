@@ -184,13 +184,38 @@ CREATE INDEX IF NOT EXISTS idx_team_members_user ON team_members(user_id);
 
 -- Default achievements
 INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUES
+    -- Milestone achievements
     ('first_review', 'First Blood', 'Submit your first review', '🩸', 50, 'common'),
     ('review_10', 'Getting Started', 'Submit 10 reviews', '📝', 100, 'common'),
     ('review_50', 'Reviewer', 'Submit 50 reviews', '👁️', 250, 'uncommon'),
     ('review_100', 'Centurion', 'Submit 100 reviews', '💯', 500, 'rare'),
-    ('speed_demon', 'Speed Demon', 'Review a PR within 1 hour (10 times)', '⚡', 200, 'uncommon'),
-    ('night_owl', 'Night Owl', 'Submit 10 reviews after midnight', '🦉', 150, 'uncommon'),
+    ('review_500', 'Gatekeeper', 'Submit 500 reviews', '🏰', 1000, 'epic'),
+    ('review_1000', 'Code Guardian', 'Submit 1000 reviews', '⚔️', 2000, 'legendary'),
+    -- Speed achievements
+    ('speed_demon', 'Speed Demon', 'Review within 1 hour of PR creation (10x)', '⚡', 200, 'uncommon'),
+    ('first_responder', 'First Responder', 'Be first reviewer on a PR (25x)', '🚨', 300, 'rare'),
+    -- Quality achievements  
+    ('nitpicker', 'Nitpicker', 'Leave 50 comments marked as nits', '🔍', 100, 'common'),
+    ('bug_hunter', 'Bug Hunter', 'Catch 10 bugs in reviews', '🐛', 400, 'rare'),
+    ('thorough', 'Deep Dive', 'Leave 10+ comments in a single review (5x)', '🤿', 250, 'uncommon'),
+    -- Streak achievements
     ('review_streak_7', 'On Fire', 'Review PRs 7 days in a row', '🔥', 300, 'rare'),
+    ('review_streak_30', 'Unstoppable', 'Review PRs 30 days in a row', '💪', 750, 'epic'),
+    -- Fun/creative achievements
+    ('comeback_kid', 'Comeback Kid', 'Return after 30+ day absence', '🦅', 150, 'uncommon'),
+    ('review_rampage', 'Review Rampage', 'Review 5 PRs in a single day', '💥', 200, 'uncommon'),
+    ('the_closer', 'The Closer', 'Your approval led to 10 merges', '🎬', 350, 'rare'),
+    ('helpful', 'Helpful', 'Get 10 "thanks" replies to your comments', '🙏', 200, 'uncommon'),
+    -- PR author achievements
     ('first_pr', 'Ship It', 'Create your first PR', '🚀', 25, 'common'),
-    ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon')
-ON CONFLICT (id) DO NOTHING;
+    ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon'),
+    ('pr_merged_100', 'Prolific', 'Get 100 PRs merged', '✨', 500, 'rare')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    emoji = EXCLUDED.emoji,
+    xp_reward = EXCLUDED.xp_reward,
+    rarity = EXCLUDED.rarity;
+
+-- Remove deprecated achievements
+DELETE FROM achievements WHERE id = 'night_owl';

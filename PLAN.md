@@ -148,15 +148,38 @@ Level = floor(sqrt(XP / 100)) + 1
 
 ### Achievements (Defined)
 
+**Milestone achievements:**
 | ID | Name | Description | XP | Rarity |
 |----|------|-------------|-----|--------|
 | `first_review` | First Blood | Submit your first review | 50 | Common |
 | `review_10` | Getting Started | Submit 10 reviews | 100 | Common |
 | `review_50` | Reviewer | Submit 50 reviews | 250 | Uncommon |
 | `review_100` | Centurion | Submit 100 reviews | 500 | Rare |
-| `speed_demon` | Speed Demon | Review a PR within 1 hour (10x) | 200 | Uncommon |
-| `night_owl` | Night Owl | Submit 10 reviews after midnight | 150 | Uncommon |
+| `review_500` | Gatekeeper | Submit 500 reviews | 1000 | Epic |
+| `review_1000` | Code Guardian | Submit 1000 reviews | 2000 | Legendary |
+
+**Speed achievements:**
+| ID | Name | Description | XP | Rarity |
+|----|------|-------------|-----|--------|
+| `speed_demon` | Speed Demon | Review within 1h of PR creation (10x) | 200 | Uncommon |
+| `first_responder` | First Responder | Be first reviewer on a PR (25x) | 300 | Rare |
+
+**Quality achievements:**
+| ID | Name | Description | XP | Rarity |
+|----|------|-------------|-----|--------|
+| `nitpicker` | Nitpicker | Leave 50 comments marked as nits | 100 | Common |
+| `bug_hunter` | Bug Hunter | Catch 10 bugs in reviews | 400 | Rare |
+| `thorough` | Deep Dive | Leave 10+ comments in a single review (5x) | 250 | Uncommon |
+
+**Streak & special achievements:**
+| ID | Name | Description | XP | Rarity |
+|----|------|-------------|-----|--------|
 | `review_streak_7` | On Fire | Review PRs 7 days in a row | 300 | Rare |
+| `review_streak_30` | Unstoppable | Review PRs 30 days in a row | 750 | Epic |
+| `comeback_kid` | Comeback Kid | Return after 30+ day absence | 150 | Uncommon |
+| `review_rampage` | Review Rampage | Review 5 PRs in a single day | 200 | Uncommon |
+| `the_closer` | The Closer | Your approval led to 10 merges | 350 | Rare |
+| `helpful` | Helpful | Get 10 "thanks" replies to comments | 200 | Uncommon |
 
 ## Deployment
 
@@ -232,7 +255,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] User profile pages (via M4 Individual contributor view)
 - [x] Filter bots from leaderboard
 
-### M8: UI Test Coverage
+### M8: UI Test Coverage ✅
 - [x] Install Playwright for browser automation
 - [x] Screenshot-based UI tests for core views:
   - [x] Global leaderboard (desktop + mobile)
@@ -241,6 +264,16 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] Repo-scoped leaderboard
 - [x] AI vision verification of screenshots (`npm run verify` uses Claude Vision)
 - [x] CI integration for visual regression
+
+### M9: Polish & Generalization
+- [ ] Remove Night Owl achievement (can't know contributor timezones)
+- [ ] Add creative/fun achievements (research other games for inspiration)
+  - Ideas: "Nitpicker" (10 nit comments), "Bug Hunter" (catch 5 bugs), "Weekend Warrior", "Review Rampage" (5 reviews in 1 day), "The Closer" (review that leads to merge), "Comeback Kid" (review after 30 day absence), "Polyglot" (review 3+ repos), "Early Bird" (first review on a PR 10 times)
+- [ ] Landing page redesign:
+  - [ ] Root URL shows intro/marketing landing page
+  - [ ] List of tracked repositories with stats
+  - [ ] Link to GitHub source
+  - [ ] "Add your repo" CTA / request access flow
 
 ## Development Workflow: AI-Assisted UI Iteration
 
