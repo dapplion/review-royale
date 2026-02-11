@@ -127,6 +127,17 @@ CREATE TABLE IF NOT EXISTS user_achievements (
     PRIMARY KEY (user_id, achievement_id)
 );
 
+-- Migration: Add notified_at column to user_achievements if missing (for existing DBs)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'user_achievements' AND column_name = 'notified_at'
+    ) THEN
+        ALTER TABLE user_achievements ADD COLUMN notified_at TIMESTAMPTZ;
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_unlocked ON user_achievements(unlocked_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_pending ON user_achievements(unlocked_at) WHERE notified_at IS NULL;
@@ -183,14 +194,3 @@ INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUE
     ('first_pr', 'Ship It', 'Create your first PR', '🚀', 25, 'common'),
     ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon')
 ON CONFLICT (id) DO NOTHING;
-
--- Migration: Add notified_at column to user_achievements if missing
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'user_achievements' AND column_name = 'notified_at'
-    ) THEN
-        ALTER TABLE user_achievements ADD COLUMN notified_at TIMESTAMPTZ;
-    END IF;
-END $$;
