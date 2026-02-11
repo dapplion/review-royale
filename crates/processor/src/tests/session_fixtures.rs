@@ -47,7 +47,10 @@ fn load_reviews(json: &str) -> Vec<Review> {
             },
             body: f.body,
             comments_count: 1, // Each review event = 1 comment for simplicity
-            submitted_at: f.submitted_at.parse::<DateTime<Utc>>().expect("Invalid date"),
+            submitted_at: f
+                .submitted_at
+                .parse::<DateTime<Utc>>()
+                .expect("Invalid date"),
         })
         .collect()
 }
