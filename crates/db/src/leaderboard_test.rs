@@ -1,8 +1,10 @@
 //! Tests for leaderboard queries
 //!
 //! These tests verify that the leaderboard returns period-specific data.
+//! Note: These are documentation tests that explain expected behavior.
 
 #[cfg(test)]
+#[allow(clippy::assertions_on_constants)]
 mod tests {
     /// Verify leaderboard returns period-specific XP via entry.score
     ///
