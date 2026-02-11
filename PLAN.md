@@ -226,10 +226,10 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Roast command
 
 ### M7: Advanced Features
-- [ ] Achievement unlock logic
+- [x] Achievement unlock logic (in processor/achievements.rs, runs on recalculate)
 - [ ] Seasons (monthly/quarterly resets)
 - [ ] Team leaderboards
-- [ ] User profile pages
+- [x] User profile pages (via M4 Individual contributor view)
 - [x] Filter bots from leaderboard
 
 ## Development Workflow: AI-Assisted UI Iteration

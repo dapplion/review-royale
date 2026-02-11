@@ -107,6 +107,21 @@ async fn stats(
     let rank = db::leaderboard::get_user_rank(pool, user.id, None, since).await?;
     let achievements = db::achievements::list_for_user(pool, user.id).await?;
 
+    // Format achievements with emojis
+    let achievements_str = if achievements.is_empty() {
+        "None yet".to_string()
+    } else {
+        achievements
+            .iter()
+            .map(|a| {
+                let emoji = a.emoji.as_deref().unwrap_or("🏆");
+                let name = a.name.as_deref().unwrap_or(&a.achievement_id);
+                format!("{} {}", emoji, name)
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+
     let response = format!(
         "📊 **Stats for {}**\n\n\
         🎮 **Level:** {}\n\
@@ -120,7 +135,7 @@ async fn stats(
         reviews,
         rank.map(|r| format!("#{}", r))
             .unwrap_or_else(|| "Unranked".to_string()),
-        achievements.len()
+        achievements_str
     );
 
     msg.reply(&ctx.http, response).await?;
