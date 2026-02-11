@@ -53,8 +53,27 @@ pub struct ReviewsQuery {
     pub limit: i64,
 }
 
+#[derive(Deserialize)]
+pub struct StatsQuery {
+    #[serde(default = "default_period")]
+    pub period: String,
+}
+
+fn default_period() -> String {
+    "all".to_string()
+}
+
 fn default_limit() -> i64 {
     10
+}
+
+fn period_to_since(period: &str) -> chrono::DateTime<Utc> {
+    match period {
+        "week" => Utc::now() - Duration::days(7),
+        "month" => Utc::now() - Duration::days(30),
+        "all" => Utc::now() - Duration::days(365 * 10),
+        _ => Utc::now() - Duration::days(365 * 10),
+    }
 }
 
 pub async fn get(
@@ -72,6 +91,7 @@ pub async fn get(
 pub async fn stats(
     State(state): State<Arc<AppState>>,
     Path(username): Path<String>,
+    Query(query): Query<StatsQuery>,
 ) -> ApiResult<Json<UserProfile>> {
     let user = db::users::get_by_login(&state.pool, &username)
         .await
@@ -83,13 +103,13 @@ pub async fn stats(
         .await
         .db_err()?;
 
-    // Get rank (all time for profile)
-    let since = Utc::now() - Duration::days(365 * 10);
+    // Get period-specific stats
+    let since = period_to_since(&query.period);
     let rank = db::leaderboard::get_user_rank(&state.pool, user.id, None, since)
         .await
         .db_err()?;
 
-    // Get full user stats
+    // Get full user stats for the period
     let stats = db::users::get_stats(&state.pool, user.id, since)
         .await
         .db_err()?;

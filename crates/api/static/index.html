@@ -517,7 +517,7 @@
             const entry = leaderboardData.find(e => e.user.login === username);
             
             try {
-                const response = await fetch(`${getUserApiBase(username)}/stats`);
+                const response = await fetch(`${getUserApiBase(username)}/stats?period=${currentProfilePeriod}`);
                 if (!response.ok) throw new Error('User not found');
                 const data = await response.json();
                 
