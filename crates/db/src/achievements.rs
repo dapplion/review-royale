@@ -27,6 +27,9 @@ pub async fn unlock(
         user_id: row.get("user_id"),
         achievement_id: row.get("achievement_id"),
         unlocked_at: row.get("unlocked_at"),
+        name: None,
+        description: None,
+        emoji: None,
     })
 }
 
@@ -52,17 +55,19 @@ pub async fn has_achievement(
     Ok(row.get::<bool, _>("exists"))
 }
 
-/// Get all achievements for a user
+/// Get all achievements for a user with full details
 pub async fn list_for_user(
     pool: &PgPool,
     user_id: Uuid,
 ) -> Result<Vec<UserAchievement>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
-        SELECT user_id, achievement_id, unlocked_at
-        FROM user_achievements
-        WHERE user_id = $1
-        ORDER BY unlocked_at DESC
+        SELECT ua.user_id, ua.achievement_id, ua.unlocked_at,
+               a.name, a.description, a.emoji
+        FROM user_achievements ua
+        JOIN achievements a ON a.id = ua.achievement_id
+        WHERE ua.user_id = $1
+        ORDER BY ua.unlocked_at DESC
         "#,
     )
     .bind(user_id)
@@ -75,6 +80,9 @@ pub async fn list_for_user(
             user_id: r.get("user_id"),
             achievement_id: r.get("achievement_id"),
             unlocked_at: r.get("unlocked_at"),
+            name: Some(r.get("name")),
+            description: Some(r.get("description")),
+            emoji: Some(r.get("emoji")),
         })
         .collect())
 }
@@ -86,9 +94,11 @@ pub async fn list_recent_unlocks(
 ) -> Result<Vec<UserAchievement>, sqlx::Error> {
     let rows = sqlx::query(
         r#"
-        SELECT user_id, achievement_id, unlocked_at
-        FROM user_achievements
-        ORDER BY unlocked_at DESC
+        SELECT ua.user_id, ua.achievement_id, ua.unlocked_at,
+               a.name, a.description, a.emoji
+        FROM user_achievements ua
+        JOIN achievements a ON a.id = ua.achievement_id
+        ORDER BY ua.unlocked_at DESC
         LIMIT $1
         "#,
     )
@@ -102,6 +112,9 @@ pub async fn list_recent_unlocks(
             user_id: r.get("user_id"),
             achievement_id: r.get("achievement_id"),
             unlocked_at: r.get("unlocked_at"),
+            name: Some(r.get("name")),
+            description: Some(r.get("description")),
+            emoji: Some(r.get("emoji")),
         })
         .collect())
 }

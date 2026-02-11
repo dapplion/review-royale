@@ -250,6 +250,12 @@ pub struct UserAchievement {
     pub user_id: Uuid,
     pub achievement_id: String,
     pub unlocked_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emoji: Option<String>,
 }
 
 /// A competitive season
