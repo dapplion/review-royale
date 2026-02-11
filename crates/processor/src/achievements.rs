@@ -74,6 +74,15 @@ impl AchievementChecker {
             unlocked.push(defs::SPEED_DEMON.to_string());
         }
 
+        // 7-day review streak
+        let has_streak = db::reviews::has_7_day_streak(&self.pool, *user_id)
+            .await
+            .map_err(|e| common::Error::Database(e.to_string()))?;
+
+        if has_streak && self.try_unlock(user_id, defs::REVIEW_STREAK_7).await? {
+            unlocked.push(defs::REVIEW_STREAK_7.to_string());
+        }
+
         Ok(unlocked)
     }
 

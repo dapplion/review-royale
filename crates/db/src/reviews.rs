@@ -163,6 +163,38 @@ pub async fn count_fast_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sql
     Ok(row.get::<i64, _>("count"))
 }
 
+/// Check if user has a 7-day review streak (at least one review on 7 consecutive days)
+pub async fn has_7_day_streak(pool: &PgPool, user_id: Uuid) -> Result<bool, sqlx::Error> {
+    // Get distinct review dates, find max consecutive streak
+    let row = sqlx::query(
+        r#"
+        WITH review_dates AS (
+            SELECT DISTINCT DATE(submitted_at) as review_date
+            FROM reviews
+            WHERE reviewer_id = $1
+        ),
+        streaks AS (
+            SELECT review_date,
+                   review_date - (ROW_NUMBER() OVER (ORDER BY review_date))::int AS streak_group
+            FROM review_dates
+        ),
+        streak_lengths AS (
+            SELECT streak_group, COUNT(*) as streak_len
+            FROM streaks
+            GROUP BY streak_group
+        )
+        SELECT COALESCE(MAX(streak_len), 0) as max_streak
+        FROM streak_lengths
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    let max_streak: i64 = row.get("max_streak");
+    Ok(max_streak >= 7)
+}
+
 /// List all reviews (for recalculation)
 pub async fn list_all(pool: &PgPool) -> Result<Vec<Review>, sqlx::Error> {
     let rows = sqlx::query(
