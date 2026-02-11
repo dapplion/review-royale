@@ -239,7 +239,7 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] User profile page
   - [x] Period filter switching
   - [x] Repo-scoped leaderboard
-- [ ] AI vision verification of screenshots
+- [x] AI vision verification of screenshots (`npm run verify` uses Claude Vision)
 - [ ] CI integration for visual regression
 
 ## Development Workflow: AI-Assisted UI Iteration

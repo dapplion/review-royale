@@ -7,13 +7,19 @@
     "test:desktop": "playwright test --project='Desktop Chrome'",
     "test:mobile": "playwright test --project='Mobile'",
     "screenshot": "playwright test --reporter=list",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "verify": "npx ts-node --esm verify-screenshots.ts",
+    "test:full": "playwright test && npx ts-node --esm verify-screenshots.ts"
   },
   "keywords": ["playwright", "ui-tests", "review-royale"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "playwright": "^1.58.2"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@types/node": "^22.0.0",
+    "playwright": "^1.58.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
   }
 }
