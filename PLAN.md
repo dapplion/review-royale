@@ -274,15 +274,15 @@ Level = floor(sqrt(XP / 100)) + 1
   - [ ] Link to GitHub source
   - [ ] "Add your repo" CTA / request access flow
 
-### M10: Open PRs Dashboard
-- [ ] Show total open PRs count on leaderboard page (clickable)
-- [ ] PR list view with rich stats:
-  - [ ] PR title, number, author, created date
-  - [ ] Difficulty estimate (lines changed, files touched)
+### M10: Open PRs Dashboard ✅
+- [x] Show total open PRs count on leaderboard page (clickable)
+- [x] PR list view with rich stats:
+  - [x] PR title, number, author, created date
+  - [ ] Difficulty estimate (lines changed, files touched) — needs GitHub API enrichment
   - [ ] Internal vs external contributor flag
-  - [ ] Review status (approved/changes_requested/pending/none)
-  - [ ] Time waiting for review
-  - [ ] Active reviewers list
+  - [x] Review status (approved/changes_requested/reviewed/needs_review)
+  - [x] Time waiting for review (age in hours/days)
+  - [x] Active reviewers list
 - [ ] Sort/filter options (by age, difficulty, status)
 
 ## Development Workflow: AI-Assisted UI Iteration
