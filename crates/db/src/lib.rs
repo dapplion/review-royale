@@ -13,6 +13,9 @@ pub mod review_comments;
 pub mod reviews;
 pub mod users;
 
+#[cfg(test)]
+mod leaderboard_test;
+
 /// Create a database connection pool
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
     info!("Connecting to database...");
