@@ -280,6 +280,10 @@ pub struct UserStats {
     pub avg_time_to_first_review_secs: Option<f64>,
     pub avg_review_depth: Option<f64>,
     pub review_streak_days: i32,
+    /// XP earned in this period (sum of xp_earned from reviews)
+    pub period_xp: i64,
+    /// Number of review sessions (grouped by commit boundaries + time gaps)
+    pub sessions: i32,
 }
 
 /// Leaderboard entry

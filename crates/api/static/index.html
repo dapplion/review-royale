@@ -157,7 +157,7 @@
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-reviews" class="text-2xl font-bold text-pink-400">-</div>
-                    <div class="text-xs text-gray-500">Reviews</div>
+                    <div class="text-xs text-gray-500">Sessions</div>
                 </div>
                 <div class="stat-card rounded-xl p-4 border border-white/10 text-center">
                     <div id="profile-prs-reviewed" class="text-2xl font-bold text-orange-400">-</div>
@@ -532,14 +532,17 @@
 
                 document.getElementById('profile-avatar').src = user.avatar_url || `https://github.com/${user.login}.png`;
                 document.getElementById('profile-name').textContent = user.login;
-                document.getElementById('profile-xp').textContent = formatNumber(user.xp);
+                // Use period-specific XP, not total user.xp
+                const periodXp = stats.period_xp || 0;
+                document.getElementById('profile-xp').textContent = formatNumber(periodXp);
                 document.getElementById('profile-rank').textContent = `Rank #${rank}`;
                 
                 const levelColor = getLevelColor(user.level);
                 document.getElementById('profile-level').className = `px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${levelColor} text-white`;
                 document.getElementById('profile-level').textContent = `Level ${user.level}`;
 
-                document.getElementById('profile-reviews').textContent = stats.reviews_given || 0;
+                // Use sessions count (grouped reviews), not raw GitHub events
+                document.getElementById('profile-reviews').textContent = stats.sessions || 0;
                 document.getElementById('profile-prs-reviewed').textContent = stats.prs_reviewed || 0;
                 document.getElementById('profile-first').textContent = stats.first_reviews || 0;
                 document.getElementById('profile-comments').textContent = stats.comments_written || 0;
@@ -549,13 +552,13 @@
                 const reviewBaseXP = (stats.prs_reviewed || 0) * 10;
                 const commentXP = (stats.comments_written || 0) * 5;
                 const estimatedTotal = reviewBaseXP + commentXP;
-                const bonusXP = user.xp - estimatedTotal;
+                const bonusXP = periodXp - estimatedTotal;
                 const breakdown = document.getElementById('xp-breakdown');
                 breakdown.innerHTML = `
                     <div class="flex justify-between"><span class="text-gray-400">📝 PRs reviewed (${stats.prs_reviewed || 0} × 10)</span><span class="text-white">+${formatNumber(reviewBaseXP)} XP</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × 5)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
                     ${bonusXP > 0 ? `<div class="flex justify-between"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
-                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(user.xp)} XP</span></div>
+                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(periodXp)} XP</span></div>
                     <div class="text-xs text-gray-600 mt-2">Bonuses: Fast (<1h) +10, Thorough (>5 comments) +5, Deep (>10) +10</div>
                 `;
 

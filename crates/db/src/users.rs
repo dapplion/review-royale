@@ -166,7 +166,9 @@ pub async fn get_stats_for_repo(
             COALESCE(SUM(r.comments_count), 0)::int as comments_written,
             COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = $1), 0)::int as first_reviews,
             COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1)::int as prs_authored,
-            COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1 AND pr.merged_at IS NOT NULL)::int as prs_merged
+            COUNT(DISTINCT pr.id) FILTER (WHERE pr.author_id = $1 AND pr.merged_at IS NOT NULL)::int as prs_merged,
+            COALESCE(SUM(r.xp_earned), 0)::bigint as period_xp,
+            COUNT(r.id) FILTER (WHERE r.xp_earned > 0)::int as sessions
         FROM users u
         LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $2
         LEFT JOIN pull_requests pr ON pr.id = r.pr_id
@@ -187,6 +189,8 @@ pub async fn get_stats_for_repo(
         comments_written: row.get("comments_written"),
         prs_authored: row.get("prs_authored"),
         prs_merged: row.get("prs_merged"),
+        period_xp: row.get("period_xp"),
+        sessions: row.get("sessions"),
         ..Default::default()
     })
 }
