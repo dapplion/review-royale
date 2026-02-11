@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 /// Achievement definitions
 pub mod defs {
+    // Reviewer achievements
     pub const FIRST_REVIEW: &str = "first_review";
     pub const REVIEW_STREAK_7: &str = "review_streak_7";
     pub const SPEED_DEMON: &str = "speed_demon";
@@ -14,6 +15,10 @@ pub mod defs {
     pub const REVIEW_50: &str = "review_50";
     pub const REVIEW_100: &str = "review_100";
     pub const NIGHT_OWL: &str = "night_owl";
+
+    // Author achievements
+    pub const FIRST_PR: &str = "first_pr";
+    pub const PR_MERGED_10: &str = "pr_merged_10";
 }
 
 /// Checks and awards achievements
@@ -87,9 +92,30 @@ impl AchievementChecker {
     }
 
     /// Check achievements for a PR author
-    pub async fn check_author(&self, _user_id: &Uuid) -> Result<Vec<String>, common::Error> {
-        // TODO: Author-specific achievements
-        Ok(Vec::new())
+    pub async fn check_author(&self, user_id: &Uuid) -> Result<Vec<String>, common::Error> {
+        let mut unlocked = Vec::new();
+
+        // Count PRs authored by this user
+        let pr_count = db::prs::count_by_author(&self.pool, *user_id)
+            .await
+            .map_err(|e| common::Error::Database(e.to_string()))?;
+
+        // First PR
+        if pr_count == 1 && self.try_unlock(user_id, defs::FIRST_PR).await? {
+            unlocked.push(defs::FIRST_PR.to_string());
+        }
+
+        // Count merged PRs
+        let merged_count = db::prs::count_merged_by_author(&self.pool, *user_id)
+            .await
+            .map_err(|e| common::Error::Database(e.to_string()))?;
+
+        // 10 merged PRs
+        if merged_count >= 10 && self.try_unlock(user_id, defs::PR_MERGED_10).await? {
+            unlocked.push(defs::PR_MERGED_10.to_string());
+        }
+
+        Ok(unlocked)
     }
 
     /// Try to unlock an achievement, returns true if newly unlocked

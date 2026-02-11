@@ -179,5 +179,7 @@ INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUE
     ('review_100', 'Centurion', 'Submit 100 reviews', '💯', 500, 'rare'),
     ('speed_demon', 'Speed Demon', 'Review a PR within 1 hour (10 times)', '⚡', 200, 'uncommon'),
     ('night_owl', 'Night Owl', 'Submit 10 reviews after midnight', '🦉', 150, 'uncommon'),
-    ('review_streak_7', 'On Fire', 'Review PRs 7 days in a row', '🔥', 300, 'rare')
+    ('review_streak_7', 'On Fire', 'Review PRs 7 days in a row', '🔥', 300, 'rare'),
+    ('first_pr', 'Ship It', 'Create your first PR', '🚀', 25, 'common'),
+    ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon')
 ON CONFLICT (id) DO NOTHING;

@@ -187,3 +187,35 @@ pub async fn list_recent(
         })
         .collect())
 }
+
+/// Count PRs authored by a user
+pub async fn count_by_author(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COUNT(*) as count
+        FROM pull_requests
+        WHERE author_id = $1
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}
+
+/// Count merged PRs authored by a user
+pub async fn count_merged_by_author(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COUNT(*) as count
+        FROM pull_requests
+        WHERE author_id = $1 AND state = 'merged'
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}
