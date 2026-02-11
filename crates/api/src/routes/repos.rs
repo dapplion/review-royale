@@ -83,7 +83,7 @@ pub async fn open_prs(
         .map(|pr| {
             let age_hours = (now - pr.created_at).num_hours();
             let hours_to_first_review = pr.first_review_at.map(|t| (t - pr.created_at).num_hours());
-            
+
             let status = if pr.approvals > 0 && pr.changes_requested == 0 {
                 approved += 1;
                 "approved"
