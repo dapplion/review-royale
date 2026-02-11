@@ -606,7 +606,12 @@ mod tests {
         let sessions = group_reviews_into_sessions(reviews, commits);
 
         // Should be 2 sessions, not 18
-        assert_eq!(sessions.len(), 2, "Expected 2 sessions, got {}", sessions.len());
+        assert_eq!(
+            sessions.len(),
+            2,
+            "Expected 2 sessions, got {}",
+            sessions.len()
+        );
         assert_eq!(sessions[0].reviews.len(), 17);
         assert_eq!(sessions[0].total_comments, 17);
         assert_eq!(sessions[1].reviews.len(), 1);
