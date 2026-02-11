@@ -21,6 +21,7 @@ impl TypeMapKey for DbPool {
     type Value = PgPool;
 }
 
+#[allow(dead_code)]
 struct NotificationChannel;
 impl TypeMapKey for NotificationChannel {
     type Value = Option<ChannelId>;
