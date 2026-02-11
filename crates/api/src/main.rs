@@ -133,9 +133,14 @@ async fn main() -> anyhow::Result<()> {
         )
         .with_state(state);
 
-    // Build full router with static file serving
+    // Build full router with static file serving and SPA fallback
+    // Serve static files, but fall back to index.html for SPA routing
+    let static_service = ServeDir::new("static")
+        .append_index_html_on_directories(true)
+        .fallback(tower_http::services::ServeFile::new("static/index.html"));
+
     let app = api_router
-        .fallback_service(ServeDir::new("static").append_index_html_on_directories(true))
+        .fallback_service(static_service)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

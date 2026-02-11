@@ -1,0 +1,19 @@
+{
+  "name": "review-royale-ui-tests",
+  "version": "1.0.0",
+  "description": "UI tests for Review Royale using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:desktop": "playwright test --project='Desktop Chrome'",
+    "test:mobile": "playwright test --project='Mobile'",
+    "screenshot": "playwright test --reporter=list",
+    "report": "playwright show-report"
+  },
+  "keywords": ["playwright", "ui-tests", "review-royale"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "playwright": "^1.58.2"
+  }
+}

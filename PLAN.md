@@ -232,6 +232,16 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] User profile pages (via M4 Individual contributor view)
 - [x] Filter bots from leaderboard
 
+### M8: UI Test Coverage
+- [ ] Install Playwright for browser automation
+- [ ] Screenshot-based UI tests for core views:
+  - [ ] Global leaderboard (desktop + mobile)
+  - [ ] User profile page
+  - [ ] Period filter switching
+  - [ ] Repo-scoped leaderboard
+- [ ] AI vision verification of screenshots
+- [ ] CI integration for visual regression
+
 ## Development Workflow: AI-Assisted UI Iteration
 
 Visual feedback loop for frontend development:
