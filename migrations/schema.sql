@@ -183,3 +183,14 @@ INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUE
     ('first_pr', 'Ship It', 'Create your first PR', '🚀', 25, 'common'),
     ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon')
 ON CONFLICT (id) DO NOTHING;
+
+-- Migration: Add notified_at column to user_achievements if missing
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'user_achievements' AND column_name = 'notified_at'
+    ) THEN
+        ALTER TABLE user_achievements ADD COLUMN notified_at TIMESTAMPTZ;
+    END IF;
+END $$;
