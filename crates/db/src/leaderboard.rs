@@ -14,7 +14,7 @@ pub async fn get_leaderboard(
 ) -> Result<Vec<LeaderboardEntry>, sqlx::Error> {
     // First, get first reviews per PR (the reviewer who submitted first)
     // Then count how many times each user was first
-    // Note: xp_earned column may not exist yet, fallback to user.xp (all-time)
+    // Sum xp_earned from reviews in the period for period-specific XP
     let rows = sqlx::query(
         r#"
         WITH first_reviews AS (
@@ -34,6 +34,7 @@ pub async fn get_leaderboard(
                 u.id,
                 COUNT(r.id)::int as reviews_given,
                 COALESCE(SUM(r.comments_count), 0)::int as comments_written,
+                COALESCE(SUM(r.xp_earned), 0)::bigint as period_xp,
                 COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews
             FROM users u
             LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $1
@@ -49,11 +50,12 @@ pub async fn get_leaderboard(
             u.created_at, u.updated_at,
             us.reviews_given,
             us.comments_written,
-            us.first_reviews
+            us.first_reviews,
+            us.period_xp
         FROM users u
         JOIN user_stats us ON us.id = u.id
         WHERE u.login NOT LIKE '%[bot]'
-        ORDER BY u.xp DESC, us.reviews_given DESC
+        ORDER BY us.period_xp DESC, us.reviews_given DESC
         LIMIT $3
         "#,
     )
@@ -67,20 +69,21 @@ pub async fn get_leaderboard(
         .into_iter()
         .enumerate()
         .map(|(idx, row)| {
-            let xp: i64 = row.get("xp");
+            let total_xp: i64 = row.get("xp");
+            let period_xp: i64 = row.get("period_xp");
             let user = User {
                 id: row.get("id"),
                 github_id: row.get("github_id"),
                 login: row.get("login"),
                 avatar_url: row.get("avatar_url"),
-                xp,
+                xp: total_xp,
                 level: row.get("level"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             };
             LeaderboardEntry {
                 rank: (idx + 1) as i32,
-                score: xp,
+                score: period_xp, // Use period-specific XP for ranking
                 user,
                 stats: UserStats {
                     reviews_given: row.get("reviews_given"),
