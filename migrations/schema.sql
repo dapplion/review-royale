@@ -1,4 +1,5 @@
--- Initial schema for Review Royale
+-- Review Royale Schema
+-- Single file schema - nuke and rebuild anytime
 
 -- Repositories
 CREATE TABLE IF NOT EXISTS repositories (
@@ -6,10 +7,13 @@ CREATE TABLE IF NOT EXISTS repositories (
     github_id BIGINT NOT NULL UNIQUE,
     owner TEXT NOT NULL,
     name TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_synced_at TIMESTAMPTZ,
+    sync_cursor TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_repos_owner_name ON repositories(owner, name);
+CREATE INDEX IF NOT EXISTS idx_repos_last_synced ON repositories(last_synced_at);
 
 -- Users
 CREATE TABLE IF NOT EXISTS users (
@@ -19,12 +23,14 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url TEXT,
     xp BIGINT NOT NULL DEFAULT 0,
     level INTEGER NOT NULL DEFAULT 1,
+    review_sessions INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_login ON users(login);
 CREATE INDEX IF NOT EXISTS idx_users_xp ON users(xp DESC);
+CREATE INDEX IF NOT EXISTS idx_users_sessions ON users(review_sessions DESC);
 
 -- Pull Requests
 CREATE TABLE IF NOT EXISTS pull_requests (
@@ -46,6 +52,21 @@ CREATE INDEX IF NOT EXISTS idx_prs_author ON pull_requests(author_id);
 CREATE INDEX IF NOT EXISTS idx_prs_created ON pull_requests(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_prs_state ON pull_requests(state);
 
+-- Commits (for review session boundaries)
+CREATE TABLE IF NOT EXISTS commits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pr_id UUID NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+    sha TEXT NOT NULL,
+    author_id UUID REFERENCES users(id),
+    committed_at TIMESTAMPTZ NOT NULL,
+    message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(pr_id, sha)
+);
+
+CREATE INDEX IF NOT EXISTS idx_commits_pr ON commits(pr_id, committed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_commits_author ON commits(author_id);
+
 -- Reviews
 CREATE TABLE IF NOT EXISTS reviews (
     id UUID PRIMARY KEY,
@@ -55,12 +76,37 @@ CREATE TABLE IF NOT EXISTS reviews (
     state TEXT NOT NULL,
     body TEXT,
     comments_count INTEGER NOT NULL DEFAULT 0,
-    submitted_at TIMESTAMPTZ NOT NULL
+    submitted_at TIMESTAMPTZ NOT NULL,
+    xp_earned INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_reviews_pr ON reviews(pr_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewer ON reviews(reviewer_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_submitted ON reviews(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_xp_period ON reviews(reviewer_id, submitted_at, xp_earned);
+
+-- Review Comments (for AI categorization)
+CREATE TABLE IF NOT EXISTS review_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    review_id UUID REFERENCES reviews(id) ON DELETE CASCADE,
+    pr_id UUID NOT NULL REFERENCES pull_requests(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    github_id BIGINT NOT NULL UNIQUE,
+    body TEXT NOT NULL,
+    path TEXT,
+    diff_hunk TEXT,
+    line INTEGER,
+    in_reply_to_id BIGINT,
+    created_at TIMESTAMPTZ NOT NULL,
+    category TEXT,
+    quality_score INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_comments_review ON review_comments(review_id);
+CREATE INDEX IF NOT EXISTS idx_review_comments_pr ON review_comments(pr_id);
+CREATE INDEX IF NOT EXISTS idx_review_comments_user ON review_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_review_comments_created ON review_comments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_review_comments_category ON review_comments(category) WHERE category IS NOT NULL;
 
 -- Achievements
 CREATE TABLE IF NOT EXISTS achievements (
@@ -101,7 +147,7 @@ CREATE TABLE IF NOT EXISTS season_scores (
     PRIMARY KEY (season_id, user_id)
 );
 
--- Insert default achievements
+-- Default achievements
 INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUES
     ('first_review', 'First Blood', 'Submit your first review', '🩸', 50, 'common'),
     ('review_10', 'Getting Started', 'Submit 10 reviews', '📝', 100, 'common'),
