@@ -233,12 +233,12 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] Filter bots from leaderboard
 
 ### M8: UI Test Coverage
-- [ ] Install Playwright for browser automation
-- [ ] Screenshot-based UI tests for core views:
-  - [ ] Global leaderboard (desktop + mobile)
-  - [ ] User profile page
-  - [ ] Period filter switching
-  - [ ] Repo-scoped leaderboard
+- [x] Install Playwright for browser automation
+- [x] Screenshot-based UI tests for core views:
+  - [x] Global leaderboard (desktop + mobile)
+  - [x] User profile page
+  - [x] Period filter switching
+  - [x] Repo-scoped leaderboard
 - [ ] AI vision verification of screenshots
 - [ ] CI integration for visual regression
 
