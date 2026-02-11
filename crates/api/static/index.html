@@ -387,7 +387,7 @@
                                     <span class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</span>
                                     <span class="md:hidden inline-flex items-center px-1.5 py-0.5 rounded bg-gradient-to-r ${levelColor} text-[10px] font-bold flex-shrink-0">${user.level}</span>
                                 </div>
-                                <div class="text-xs text-gray-500">${stats.reviews_given || 0} session${(stats.reviews_given || 0) === 1 ? '' : 's'}</div>
+                                <div class="text-xs text-gray-500">${stats.prs_reviewed || 0} PR${(stats.prs_reviewed || 0) === 1 ? '' : 's'} reviewed</div>
                             </div>
                         </div>
                         <div class="col-span-2 text-center hidden md:block">
@@ -541,13 +541,13 @@
                 document.getElementById('profile-prs').textContent = stats.prs_authored || 0;
 
                 // XP Breakdown (estimated based on current formula)
-                const reviewBaseXP = (stats.reviews_given || 0) * 10;
+                const reviewBaseXP = (stats.prs_reviewed || 0) * 10;
                 const commentXP = (stats.comments_written || 0) * 5;
                 const estimatedTotal = reviewBaseXP + commentXP;
                 const bonusXP = user.xp - estimatedTotal;
                 const breakdown = document.getElementById('xp-breakdown');
                 breakdown.innerHTML = `
-                    <div class="flex justify-between"><span class="text-gray-400">📝 Review sessions (${stats.reviews_given || 0} × 10)</span><span class="text-white">+${formatNumber(reviewBaseXP)} XP</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">📝 PRs reviewed (${stats.prs_reviewed || 0} × 10)</span><span class="text-white">+${formatNumber(reviewBaseXP)} XP</span></div>
                     <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × 5)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
                     ${bonusXP > 0 ? `<div class="flex justify-between"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
                     <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(user.xp)} XP</span></div>

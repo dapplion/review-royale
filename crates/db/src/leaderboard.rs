@@ -33,6 +33,7 @@ pub async fn get_leaderboard(
             SELECT 
                 u.id,
                 COUNT(r.id)::int as reviews_given,
+                COUNT(DISTINCT r.pr_id)::int as prs_reviewed,
                 COALESCE(SUM(r.comments_count), 0)::int as comments_written,
                 COALESCE(SUM(r.xp_earned), 0)::bigint as period_xp,
                 COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews
@@ -49,6 +50,7 @@ pub async fn get_leaderboard(
             u.xp, u.level,
             u.created_at, u.updated_at,
             us.reviews_given,
+            us.prs_reviewed,
             us.comments_written,
             us.first_reviews,
             us.period_xp
@@ -87,6 +89,7 @@ pub async fn get_leaderboard(
                 user,
                 stats: UserStats {
                     reviews_given: row.get("reviews_given"),
+                    prs_reviewed: row.get("prs_reviewed"),
                     comments_written: row.get("comments_written"),
                     first_reviews: row.get("first_reviews"),
                     ..Default::default()
