@@ -182,6 +182,11 @@
                 <div id="xp-breakdown" class="bg-black/20 rounded-xl p-4 space-y-2 text-sm"></div>
             </div>
 
+            <div id="achievements-section" class="mb-8 hidden">
+                <h3 class="text-lg font-semibold mb-4">🏆 Achievements</h3>
+                <div id="achievements-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            </div>
+
             <div class="mb-8">
                 <h3 class="text-lg font-semibold mb-4">📈 Activity Over Time</h3>
                 <div class="bg-black/20 rounded-xl p-4" style="height: 300px;">
@@ -553,6 +558,24 @@
                     <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(user.xp)} XP</span></div>
                     <div class="text-xs text-gray-600 mt-2">Bonuses: Fast (<1h) +10, Thorough (>5 comments) +5, Deep (>10) +10</div>
                 `;
+
+                // Display achievements
+                const achievementsSection = document.getElementById('achievements-section');
+                const achievementsGrid = document.getElementById('achievements-grid');
+                const achievements = data.achievements || [];
+                
+                if (achievements.length > 0) {
+                    achievementsSection.classList.remove('hidden');
+                    achievementsGrid.innerHTML = achievements.map(a => `
+                        <div class="bg-black/30 rounded-lg p-3 text-center border border-white/10">
+                            <div class="text-2xl mb-1">${a.emoji || '🏆'}</div>
+                            <div class="font-semibold text-sm">${a.name}</div>
+                            <div class="text-xs text-gray-500">${a.description}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    achievementsSection.classList.add('hidden');
+                }
 
                 // Load activity chart
                 loadActivityChart(username);
