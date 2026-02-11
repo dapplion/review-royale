@@ -14,7 +14,6 @@ pub mod defs {
     pub const REVIEW_10: &str = "review_10";
     pub const REVIEW_50: &str = "review_50";
     pub const REVIEW_100: &str = "review_100";
-    pub const NIGHT_OWL: &str = "night_owl";
 
     // Author achievements
     pub const FIRST_PR: &str = "first_pr";
@@ -59,15 +58,6 @@ impl AchievementChecker {
         // 100 reviews
         if count >= 100 && self.try_unlock(user_id, defs::REVIEW_100).await? {
             unlocked.push(defs::REVIEW_100.to_string());
-        }
-
-        // Night owl: 10+ reviews between midnight and 6am UTC
-        let night_count = db::reviews::count_night_reviews(&self.pool, *user_id)
-            .await
-            .map_err(|e| common::Error::Database(e.to_string()))?;
-
-        if night_count >= 10 && self.try_unlock(user_id, defs::NIGHT_OWL).await? {
-            unlocked.push(defs::NIGHT_OWL.to_string());
         }
 
         // Speed demon: 10+ fast reviews (within 1 hour of commits)

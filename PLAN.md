@@ -266,7 +266,7 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] CI integration for visual regression
 
 ### M9: Polish & Generalization
-- [ ] Remove Night Owl achievement (can't know contributor timezones)
+- [x] Remove Night Owl achievement (can't know contributor timezones)
 - [ ] Add creative/fun achievements (research other games for inspiration)
   - Ideas: "Nitpicker" (10 nit comments), "Bug Hunter" (catch 5 bugs), "Weekend Warrior", "Review Rampage" (5 reviews in 1 day), "The Closer" (review that leads to merge), "Comeback Kid" (review after 30 day absence), "Polyglot" (review 3+ repos), "Early Bird" (first review on a PR 10 times)
 - [ ] Landing page redesign:

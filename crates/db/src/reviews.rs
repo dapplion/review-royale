@@ -121,24 +121,6 @@ pub async fn count_by_user(
     Ok(row.get::<i64, _>("count"))
 }
 
-/// Count night reviews by a user (submitted between midnight and 6am UTC)
-pub async fn count_night_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
-    let row = sqlx::query(
-        r#"
-        SELECT COUNT(*) as count
-        FROM reviews
-        WHERE reviewer_id = $1
-          AND EXTRACT(HOUR FROM submitted_at) >= 0
-          AND EXTRACT(HOUR FROM submitted_at) < 6
-        "#,
-    )
-    .bind(user_id)
-    .fetch_one(pool)
-    .await?;
-
-    Ok(row.get::<i64, _>("count"))
-}
-
 /// Count fast reviews by a user (submitted within 1 hour of the latest commit on the PR)
 pub async fn count_fast_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
