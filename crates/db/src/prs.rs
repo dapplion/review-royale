@@ -219,3 +219,100 @@ pub async fn count_merged_by_author(pool: &PgPool, user_id: Uuid) -> Result<i64,
 
     Ok(row.get::<i64, _>("count"))
 }
+
+/// Open PR with review statistics
+#[derive(Debug)]
+pub struct OpenPrWithStats {
+    pub id: Uuid,
+    pub number: i32,
+    pub title: String,
+    pub author_login: String,
+    pub author_avatar: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub first_review_at: Option<DateTime<Utc>>,
+    pub review_count: i32,
+    pub approvals: i32,
+    pub changes_requested: i32,
+    pub comments_count: i32,
+    pub latest_review_state: Option<String>,
+    pub reviewers: Vec<String>,
+}
+
+/// Get open PRs with review statistics
+pub async fn list_open_with_stats(
+    pool: &PgPool,
+    repo_id: Uuid,
+) -> Result<Vec<OpenPrWithStats>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        SELECT 
+            pr.id,
+            pr.number,
+            pr.title,
+            author.login as author_login,
+            author.avatar_url as author_avatar,
+            pr.created_at,
+            pr.first_review_at,
+            COALESCE(rs.review_count, 0)::int as review_count,
+            COALESCE(rs.approvals, 0)::int as approvals,
+            COALESCE(rs.changes_requested, 0)::int as changes_requested,
+            COALESCE(rs.comments_count, 0)::int as comments_count,
+            rs.latest_review_state,
+            COALESCE(rs.reviewers, ARRAY[]::text[]) as reviewers
+        FROM pull_requests pr
+        JOIN users author ON author.id = pr.author_id
+        LEFT JOIN LATERAL (
+            SELECT 
+                COUNT(DISTINCT r.id)::int as review_count,
+                COUNT(DISTINCT r.id) FILTER (WHERE r.state = 'approved')::int as approvals,
+                COUNT(DISTINCT r.id) FILTER (WHERE r.state = 'changes_requested')::int as changes_requested,
+                SUM(r.comments_count)::int as comments_count,
+                (SELECT r2.state FROM reviews r2 WHERE r2.pr_id = pr.id ORDER BY r2.submitted_at DESC LIMIT 1) as latest_review_state,
+                ARRAY_AGG(DISTINCT reviewer.login) FILTER (WHERE reviewer.login IS NOT NULL) as reviewers
+            FROM reviews r
+            JOIN users reviewer ON reviewer.id = r.reviewer_id
+            WHERE r.pr_id = pr.id
+        ) rs ON true
+        WHERE pr.repo_id = $1 AND pr.state = 'open'
+        ORDER BY pr.created_at ASC
+        "#,
+    )
+    .bind(repo_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| OpenPrWithStats {
+            id: r.get("id"),
+            number: r.get("number"),
+            title: r.get("title"),
+            author_login: r.get("author_login"),
+            author_avatar: r.get("author_avatar"),
+            created_at: r.get("created_at"),
+            first_review_at: r.get("first_review_at"),
+            review_count: r.get("review_count"),
+            approvals: r.get("approvals"),
+            changes_requested: r.get("changes_requested"),
+            comments_count: r.get("comments_count"),
+            latest_review_state: r.get("latest_review_state"),
+            reviewers: r.get("reviewers"),
+        })
+        .collect())
+}
+
+/// Count open PRs for a repo
+pub async fn count_open(pool: &PgPool, repo_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COUNT(*) as count
+        FROM pull_requests
+        WHERE repo_id = $1 AND state = 'open'
+        "#,
+    )
+    .bind(repo_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}

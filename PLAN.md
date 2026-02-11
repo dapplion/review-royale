@@ -267,13 +267,23 @@ Level = floor(sqrt(XP / 100)) + 1
 
 ### M9: Polish & Generalization
 - [x] Remove Night Owl achievement (can't know contributor timezones)
-- [ ] Add creative/fun achievements (research other games for inspiration)
-  - Ideas: "Nitpicker" (10 nit comments), "Bug Hunter" (catch 5 bugs), "Weekend Warrior", "Review Rampage" (5 reviews in 1 day), "The Closer" (review that leads to merge), "Comeback Kid" (review after 30 day absence), "Polyglot" (review 3+ repos), "Early Bird" (first review on a PR 10 times)
+- [x] Add creative/fun achievements
 - [ ] Landing page redesign:
   - [ ] Root URL shows intro/marketing landing page
   - [ ] List of tracked repositories with stats
   - [ ] Link to GitHub source
   - [ ] "Add your repo" CTA / request access flow
+
+### M10: Open PRs Dashboard
+- [ ] Show total open PRs count on leaderboard page (clickable)
+- [ ] PR list view with rich stats:
+  - [ ] PR title, number, author, created date
+  - [ ] Difficulty estimate (lines changed, files touched)
+  - [ ] Internal vs external contributor flag
+  - [ ] Review status (approved/changes_requested/pending/none)
+  - [ ] Time waiting for review
+  - [ ] Active reviewers list
+- [ ] Sort/filter options (by age, difficulty, status)
 
 ## Development Workflow: AI-Assisted UI Iteration
 

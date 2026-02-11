@@ -68,6 +68,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/repos", get(routes::repos::list))
         .route("/api/repos/:owner/:name", get(routes::repos::get))
         .route(
+            "/api/repos/:owner/:name/open-prs",
+            get(routes::repos::open_prs),
+        )
+        .route(
             "/api/repos/:owner/:name/leaderboard",
             get(routes::leaderboard::get),
         )

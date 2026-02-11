@@ -62,7 +62,11 @@
             <button onclick="loadLeaderboard('all')" id="btn-all" class="period-btn px-4 md:px-5 py-3 rounded-full text-sm font-medium transition-all duration-200 bg-white/5 hover:bg-white/10 border border-white/10 min-h-[48px]">All Time</button>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="stats-summary">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8" id="stats-summary">
+            <div class="stat-card rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="showOpenPrs()">
+                <div class="text-2xl font-bold text-yellow-400" id="stat-open-prs">-</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Open PRs 🔗</div>
+            </div>
             <div class="stat-card rounded-xl p-4 border border-white/10">
                 <div class="text-2xl font-bold text-purple-400" id="stat-reviewers">-</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wider">Reviewers</div>
@@ -202,6 +206,48 @@
                 <button id="load-more-reviews" class="hidden mt-4 w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors font-medium" onclick="loadMoreReviews()">
                     Load More
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Open PRs View -->
+    <div id="open-prs-view" class="hidden container mx-auto px-4 py-8 max-w-6xl">
+        <a href="#" onclick="showLeaderboard(); return false;" class="inline-flex items-center text-purple-400 hover:text-purple-300 mb-6 transition-colors">
+            ← <span id="back-from-prs-text" class="ml-1">Back to Leaderboard</span>
+        </a>
+
+        <h1 class="text-3xl font-bold mb-2">📋 Open Pull Requests</h1>
+        <p class="text-gray-400 mb-6" id="open-prs-subtitle">-</p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="stat-card rounded-xl p-4 border border-white/10">
+                <div class="text-2xl font-bold text-yellow-400" id="prs-total">-</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Total Open</div>
+            </div>
+            <div class="stat-card rounded-xl p-4 border border-white/10">
+                <div class="text-2xl font-bold text-red-400" id="prs-needs-review">-</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Needs Review</div>
+            </div>
+            <div class="stat-card rounded-xl p-4 border border-white/10">
+                <div class="text-2xl font-bold text-green-400" id="prs-approved">-</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Approved</div>
+            </div>
+            <div class="stat-card rounded-xl p-4 border border-white/10">
+                <div class="text-2xl font-bold text-orange-400" id="prs-changes">-</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wider">Changes Requested</div>
+            </div>
+        </div>
+
+        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-white/5 border-b border-white/10 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                <div class="col-span-1 text-center">#</div>
+                <div class="col-span-5">PR</div>
+                <div class="col-span-2 text-center">Status</div>
+                <div class="col-span-2 text-center">Age</div>
+                <div class="col-span-2 text-center">Reviews</div>
+            </div>
+            <div id="open-prs-body">
+                <div class="px-6 py-16 text-center text-gray-500">Loading...</div>
             </div>
         </div>
     </div>
@@ -420,6 +466,8 @@
             document.getElementById('stat-reviews').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.prs_reviewed || 0), 0));
             document.getElementById('stat-comments').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.comments_written || 0), 0));
             document.getElementById('stat-first').textContent = formatNumber(entries.reduce((sum, e) => sum + (e.stats?.first_reviews || 0), 0));
+            // Load open PRs count (async, doesn't block)
+            loadOpenPrsCount();
         }
 
         function updatePeriodButtons(period) {
@@ -485,8 +533,98 @@
 
         function showLeaderboard() {
             document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('open-prs-view').classList.add('hidden');
             document.getElementById('leaderboard-view').classList.remove('hidden');
             window.history.pushState({}, '', getLeaderboardUrl());
+        }
+
+        async function showOpenPrs() {
+            if (!currentRepo) {
+                alert('Please select a repository first');
+                return;
+            }
+            
+            document.getElementById('leaderboard-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('open-prs-view').classList.remove('hidden');
+            
+            document.getElementById('back-from-prs-text').textContent = 
+                `Back to ${currentRepo.owner}/${currentRepo.name}`;
+            document.getElementById('open-prs-subtitle').textContent = 
+                `${currentRepo.owner}/${currentRepo.name}`;
+
+            try {
+                const response = await fetch(`/api/repos/${currentRepo.owner}/${currentRepo.name}/open-prs`);
+                if (!response.ok) throw new Error('Failed to load PRs');
+                const data = await response.json();
+
+                document.getElementById('prs-total').textContent = data.total;
+                document.getElementById('prs-needs-review').textContent = data.needs_review;
+                document.getElementById('prs-approved').textContent = data.approved;
+                document.getElementById('prs-changes').textContent = data.changes_requested;
+
+                const body = document.getElementById('open-prs-body');
+                if (data.prs.length === 0) {
+                    body.innerHTML = '<div class="px-6 py-16 text-center text-gray-500">🎉 No open PRs!</div>';
+                    return;
+                }
+
+                body.innerHTML = data.prs.map(pr => {
+                    const statusColors = {
+                        'approved': 'text-green-400 bg-green-400/10',
+                        'changes_requested': 'text-orange-400 bg-orange-400/10',
+                        'reviewed': 'text-blue-400 bg-blue-400/10',
+                        'needs_review': 'text-red-400 bg-red-400/10'
+                    };
+                    const statusLabels = {
+                        'approved': '✓ Approved',
+                        'changes_requested': '⟲ Changes',
+                        'reviewed': '👁 Reviewed',
+                        'needs_review': '⏳ Needs Review'
+                    };
+                    const statusClass = statusColors[pr.status] || 'text-gray-400';
+                    const statusLabel = statusLabels[pr.status] || pr.status;
+                    
+                    const ageText = pr.age_hours < 24 
+                        ? `${pr.age_hours}h` 
+                        : `${Math.floor(pr.age_hours / 24)}d`;
+                    
+                    const reviewers = pr.reviewers.length > 0 
+                        ? pr.reviewers.slice(0, 3).join(', ') + (pr.reviewers.length > 3 ? '...' : '')
+                        : '-';
+
+                    return `
+                        <a href="${pr.url}" target="_blank" class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors items-center">
+                            <div class="col-span-1 text-center text-gray-500">#${pr.number}</div>
+                            <div class="col-span-5">
+                                <div class="font-medium text-white truncate">${pr.title}</div>
+                                <div class="text-xs text-gray-500">by ${pr.author}</div>
+                            </div>
+                            <div class="col-span-2 text-center">
+                                <span class="px-2 py-1 rounded text-xs ${statusClass}">${statusLabel}</span>
+                            </div>
+                            <div class="col-span-2 text-center text-gray-400">${ageText}</div>
+                            <div class="col-span-2 text-center text-gray-400 text-sm" title="${pr.reviewers.join(', ')}">${reviewers}</div>
+                        </a>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load open PRs:', e);
+                document.getElementById('open-prs-body').innerHTML = 
+                    '<div class="px-6 py-16 text-center text-red-400">Failed to load PRs</div>';
+            }
+        }
+
+        async function loadOpenPrsCount() {
+            if (!currentRepo) return;
+            try {
+                const response = await fetch(`/api/repos/${currentRepo.owner}/${currentRepo.name}/open-prs`);
+                if (!response.ok) return;
+                const data = await response.json();
+                document.getElementById('stat-open-prs').textContent = data.total;
+            } catch (e) {
+                console.error('Failed to load open PRs count:', e);
+            }
         }
 
         function loadProfilePeriod(period) {
@@ -509,6 +647,7 @@
 
         async function showProfile(username) {
             document.getElementById('leaderboard-view').classList.add('hidden');
+            document.getElementById('open-prs-view').classList.add('hidden');
             document.getElementById('profile-view').classList.remove('hidden');
             window.history.pushState({}, '', getUserUrl(username));
             
