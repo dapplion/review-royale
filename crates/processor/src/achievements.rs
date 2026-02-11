@@ -65,6 +65,15 @@ impl AchievementChecker {
             unlocked.push(defs::NIGHT_OWL.to_string());
         }
 
+        // Speed demon: 10+ fast reviews (within 1 hour of commits)
+        let fast_count = db::reviews::count_fast_reviews(&self.pool, *user_id)
+            .await
+            .map_err(|e| common::Error::Database(e.to_string()))?;
+
+        if fast_count >= 10 && self.try_unlock(user_id, defs::SPEED_DEMON).await? {
+            unlocked.push(defs::SPEED_DEMON.to_string());
+        }
+
         Ok(unlocked)
     }
 

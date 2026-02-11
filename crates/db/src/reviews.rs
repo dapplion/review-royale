@@ -139,6 +139,30 @@ pub async fn count_night_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sq
     Ok(row.get::<i64, _>("count"))
 }
 
+/// Count fast reviews by a user (submitted within 1 hour of the latest commit on the PR)
+pub async fn count_fast_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COUNT(DISTINCT r.id) as count
+        FROM reviews r
+        JOIN pull_requests pr ON r.pr_id = pr.id
+        JOIN LATERAL (
+            SELECT MAX(committed_at) as last_commit_at
+            FROM commits c
+            WHERE c.pr_id = pr.id AND c.committed_at < r.submitted_at
+        ) latest ON true
+        WHERE r.reviewer_id = $1
+          AND latest.last_commit_at IS NOT NULL
+          AND r.submitted_at <= latest.last_commit_at + INTERVAL '1 hour'
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}
+
 /// List all reviews (for recalculation)
 pub async fn list_all(pool: &PgPool) -> Result<Vec<Review>, sqlx::Error> {
     let rows = sqlx::query(
