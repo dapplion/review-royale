@@ -222,7 +222,7 @@ Level = floor(sqrt(XP / 100)) + 1
 ### M6: Discord Bot
 - [x] Leaderboard command (with period filter: week/month/all)
 - [x] Weekly digest (`!rr digest` command)
-- [ ] Achievement notifications
+- [x] Achievement notifications (background loop + DISCORD_NOTIFICATION_CHANNEL env var)
 - [x] Roast command
 
 ### M7: Advanced Features

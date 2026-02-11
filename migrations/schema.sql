@@ -123,11 +123,13 @@ CREATE TABLE IF NOT EXISTS user_achievements (
     user_id UUID NOT NULL REFERENCES users(id),
     achievement_id TEXT NOT NULL REFERENCES achievements(id),
     unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    notified_at TIMESTAMPTZ,
     PRIMARY KEY (user_id, achievement_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_unlocked ON user_achievements(unlocked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_achievements_pending ON user_achievements(unlocked_at) WHERE notified_at IS NULL;
 
 -- Seasons
 CREATE TABLE IF NOT EXISTS seasons (

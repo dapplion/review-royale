@@ -134,3 +134,72 @@ pub async fn count_unlocks(pool: &PgPool, achievement_id: &str) -> Result<i64, s
 
     Ok(row.get::<i64, _>("count"))
 }
+
+/// Extended achievement with user info for notifications
+pub struct AchievementNotification {
+    pub user_id: Uuid,
+    pub user_login: String,
+    pub achievement_id: String,
+    pub achievement_name: String,
+    pub achievement_emoji: String,
+    pub achievement_description: String,
+    pub unlocked_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Get pending achievement notifications (unlocked but not yet notified)
+pub async fn get_pending_notifications(
+    pool: &PgPool,
+    limit: i32,
+) -> Result<Vec<AchievementNotification>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        SELECT ua.user_id, u.login as user_login,
+               ua.achievement_id, a.name as achievement_name,
+               a.emoji as achievement_emoji, a.description as achievement_description,
+               ua.unlocked_at
+        FROM user_achievements ua
+        JOIN users u ON u.id = ua.user_id
+        JOIN achievements a ON a.id = ua.achievement_id
+        WHERE ua.notified_at IS NULL
+        ORDER BY ua.unlocked_at ASC
+        LIMIT $1
+        "#,
+    )
+    .bind(limit as i64)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| AchievementNotification {
+            user_id: r.get("user_id"),
+            user_login: r.get("user_login"),
+            achievement_id: r.get("achievement_id"),
+            achievement_name: r.get("achievement_name"),
+            achievement_emoji: r.get("achievement_emoji"),
+            achievement_description: r.get("achievement_description"),
+            unlocked_at: r.get("unlocked_at"),
+        })
+        .collect())
+}
+
+/// Mark an achievement as notified
+pub async fn mark_notified(
+    pool: &PgPool,
+    user_id: Uuid,
+    achievement_id: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE user_achievements
+        SET notified_at = NOW()
+        WHERE user_id = $1 AND achievement_id = $2
+        "#,
+    )
+    .bind(user_id)
+    .bind(achievement_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
