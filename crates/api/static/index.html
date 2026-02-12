@@ -301,23 +301,38 @@
         <h1 class="text-3xl font-bold mb-2">📋 Open Pull Requests</h1>
         <p class="text-gray-400 mb-6" id="open-prs-subtitle">-</p>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="stat-card rounded-xl p-4 border border-white/10">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterOpenPrs('all')">
                 <div class="text-2xl font-bold text-yellow-400" id="prs-total">-</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wider">Total Open</div>
             </div>
-            <div class="stat-card rounded-xl p-4 border border-white/10">
+            <div class="stat-card rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterOpenPrs('needs_review')">
                 <div class="text-2xl font-bold text-red-400" id="prs-needs-review">-</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wider">Needs Review</div>
             </div>
-            <div class="stat-card rounded-xl p-4 border border-white/10">
+            <div class="stat-card rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterOpenPrs('approved')">
                 <div class="text-2xl font-bold text-green-400" id="prs-approved">-</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wider">Approved</div>
             </div>
-            <div class="stat-card rounded-xl p-4 border border-white/10">
+            <div class="stat-card rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="filterOpenPrs('changes_requested')">
                 <div class="text-2xl font-bold text-orange-400" id="prs-changes">-</div>
                 <div class="text-xs text-gray-500 uppercase tracking-wider">Changes Requested</div>
             </div>
+        </div>
+
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex gap-2">
+                <button onclick="filterOpenPrs('all')" id="filter-all" class="pr-filter-btn px-3 py-1.5 rounded-lg text-sm bg-purple-600 border border-purple-500">All</button>
+                <button onclick="filterOpenPrs('needs_review')" id="filter-needs_review" class="pr-filter-btn px-3 py-1.5 rounded-lg text-sm bg-white/5 border border-white/10 hover:bg-white/10">Needs Review</button>
+                <button onclick="filterOpenPrs('approved')" id="filter-approved" class="pr-filter-btn px-3 py-1.5 rounded-lg text-sm bg-white/5 border border-white/10 hover:bg-white/10">Approved</button>
+                <button onclick="filterOpenPrs('changes_requested')" id="filter-changes_requested" class="pr-filter-btn px-3 py-1.5 rounded-lg text-sm bg-white/5 border border-white/10 hover:bg-white/10">Changes</button>
+            </div>
+            <select onchange="sortOpenPrs(this.value)" id="pr-sort" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none">
+                <option value="age-desc">Oldest First</option>
+                <option value="age-asc">Newest First</option>
+                <option value="reviews-desc">Most Reviews</option>
+                <option value="reviews-asc">Least Reviews</option>
+            </select>
         </div>
 
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
@@ -325,8 +340,8 @@
                 <div class="col-span-1 text-center">#</div>
                 <div class="col-span-5">PR</div>
                 <div class="col-span-2 text-center">Status</div>
-                <div class="col-span-2 text-center">Age</div>
-                <div class="col-span-2 text-center">Reviews</div>
+                <div class="col-span-2 text-center cursor-pointer hover:text-white" onclick="sortOpenPrs('age-desc')">Age ↓</div>
+                <div class="col-span-2 text-center cursor-pointer hover:text-white" onclick="sortOpenPrs('reviews-desc')">Reviews ↓</div>
             </div>
             <div id="open-prs-body">
                 <div class="px-6 py-16 text-center text-gray-500">Loading...</div>
@@ -621,6 +636,11 @@
             window.history.pushState({}, '', getLeaderboardUrl());
         }
 
+        // Open PRs state
+        let openPrsData = [];
+        let openPrsFilter = 'all';
+        let openPrsSort = 'age-desc';
+
         async function showOpenPrs() {
             if (!currentRepo) {
                 alert('Please select a repository first');
@@ -646,56 +666,100 @@
                 document.getElementById('prs-approved').textContent = data.approved;
                 document.getElementById('prs-changes').textContent = data.changes_requested;
 
-                const body = document.getElementById('open-prs-body');
-                if (data.prs.length === 0) {
-                    body.innerHTML = '<div class="px-6 py-16 text-center text-gray-500">🎉 No open PRs!</div>';
-                    return;
-                }
-
-                body.innerHTML = data.prs.map(pr => {
-                    const statusColors = {
-                        'approved': 'text-green-400 bg-green-400/10',
-                        'changes_requested': 'text-orange-400 bg-orange-400/10',
-                        'reviewed': 'text-blue-400 bg-blue-400/10',
-                        'needs_review': 'text-red-400 bg-red-400/10'
-                    };
-                    const statusLabels = {
-                        'approved': '✓ Approved',
-                        'changes_requested': '⟲ Changes',
-                        'reviewed': '👁 Reviewed',
-                        'needs_review': '⏳ Needs Review'
-                    };
-                    const statusClass = statusColors[pr.status] || 'text-gray-400';
-                    const statusLabel = statusLabels[pr.status] || pr.status;
-                    
-                    const ageText = pr.age_hours < 24 
-                        ? `${pr.age_hours}h` 
-                        : `${Math.floor(pr.age_hours / 24)}d`;
-                    
-                    const reviewers = pr.reviewers.length > 0 
-                        ? pr.reviewers.slice(0, 3).join(', ') + (pr.reviewers.length > 3 ? '...' : '')
-                        : '-';
-
-                    return `
-                        <a href="${pr.url}" target="_blank" class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors items-center">
-                            <div class="col-span-1 text-center text-gray-500">#${pr.number}</div>
-                            <div class="col-span-5">
-                                <div class="font-medium text-white truncate">${pr.title}</div>
-                                <div class="text-xs text-gray-500">by ${pr.author}</div>
-                            </div>
-                            <div class="col-span-2 text-center">
-                                <span class="px-2 py-1 rounded text-xs ${statusClass}">${statusLabel}</span>
-                            </div>
-                            <div class="col-span-2 text-center text-gray-400">${ageText}</div>
-                            <div class="col-span-2 text-center text-gray-400 text-sm" title="${pr.reviewers.join(', ')}">${reviewers}</div>
-                        </a>
-                    `;
-                }).join('');
+                openPrsData = data.prs;
+                renderOpenPrs();
             } catch (e) {
                 console.error('Failed to load open PRs:', e);
                 document.getElementById('open-prs-body').innerHTML = 
                     '<div class="px-6 py-16 text-center text-red-400">Failed to load PRs</div>';
             }
+        }
+
+        function filterOpenPrs(filter) {
+            openPrsFilter = filter;
+            // Update filter button styles
+            document.querySelectorAll('.pr-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-600', 'border-purple-500');
+                btn.classList.add('bg-white/5', 'border-white/10');
+            });
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white/5', 'border-white/10');
+                activeBtn.classList.add('bg-purple-600', 'border-purple-500');
+            }
+            renderOpenPrs();
+        }
+
+        function sortOpenPrs(sort) {
+            openPrsSort = sort;
+            document.getElementById('pr-sort').value = sort;
+            renderOpenPrs();
+        }
+
+        function renderOpenPrs() {
+            const body = document.getElementById('open-prs-body');
+            
+            // Filter
+            let prs = openPrsData;
+            if (openPrsFilter !== 'all') {
+                prs = prs.filter(pr => pr.status === openPrsFilter);
+            }
+
+            // Sort
+            prs = [...prs].sort((a, b) => {
+                switch (openPrsSort) {
+                    case 'age-desc': return b.age_hours - a.age_hours;
+                    case 'age-asc': return a.age_hours - b.age_hours;
+                    case 'reviews-desc': return b.review_count - a.review_count;
+                    case 'reviews-asc': return a.review_count - b.review_count;
+                    default: return 0;
+                }
+            });
+
+            if (prs.length === 0) {
+                body.innerHTML = '<div class="px-6 py-16 text-center text-gray-500">No PRs match the filter</div>';
+                return;
+            }
+
+            body.innerHTML = prs.map(pr => {
+                const statusColors = {
+                    'approved': 'text-green-400 bg-green-400/10',
+                    'changes_requested': 'text-orange-400 bg-orange-400/10',
+                    'reviewed': 'text-blue-400 bg-blue-400/10',
+                    'needs_review': 'text-red-400 bg-red-400/10'
+                };
+                const statusLabels = {
+                    'approved': '✓ Approved',
+                    'changes_requested': '⟲ Changes',
+                    'reviewed': '👁 Reviewed',
+                    'needs_review': '⏳ Needs Review'
+                };
+                const statusClass = statusColors[pr.status] || 'text-gray-400';
+                const statusLabel = statusLabels[pr.status] || pr.status;
+                
+                const ageText = pr.age_hours < 24 
+                    ? `${pr.age_hours}h` 
+                    : `${Math.floor(pr.age_hours / 24)}d`;
+                
+                const reviewers = pr.reviewers.length > 0 
+                    ? pr.reviewers.slice(0, 3).join(', ') + (pr.reviewers.length > 3 ? '...' : '')
+                    : '-';
+
+                return `
+                    <a href="${pr.url}" target="_blank" class="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors items-center">
+                        <div class="col-span-1 text-center text-gray-500">#${pr.number}</div>
+                        <div class="col-span-5">
+                            <div class="font-medium text-white truncate">${pr.title}</div>
+                            <div class="text-xs text-gray-500">by ${pr.author}</div>
+                        </div>
+                        <div class="col-span-2 text-center">
+                            <span class="px-2 py-1 rounded text-xs ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div class="col-span-2 text-center text-gray-400">${ageText}</div>
+                        <div class="col-span-2 text-center text-gray-400 text-sm" title="${pr.reviewers.join(', ')}">${reviewers}</div>
+                    </a>
+                `;
+            }).join('');
         }
 
         async function loadOpenPrsCount() {
