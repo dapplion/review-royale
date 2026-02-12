@@ -73,7 +73,7 @@ pub async fn get(
                 .map_err(|e| crate::error::ApiError::GitHub(e.to_string()))?;
 
             // Create repo in DB
-            let repo = db::repos::create(&state.pool, gh_repo.id as i64, &owner, &name)
+            let repo = db::repos::create(&state.pool, gh_repo.id, &owner, &name)
                 .await
                 .db_err()?;
 
