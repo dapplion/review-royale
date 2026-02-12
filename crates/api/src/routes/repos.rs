@@ -66,7 +66,7 @@ pub async fn get(
             info!("Auto-discovering repo {}/{}", owner, name);
 
             // Try to create the repo (will fail if GitHub repo doesn't exist)
-            let github = github::GitHubClient::new(&state.config.github_token);
+            let github = github::GitHubClient::new(state.config.github_token.clone());
             let gh_repo = github
                 .get_repo(&owner, &name)
                 .await
@@ -86,7 +86,12 @@ pub async fn get(
                 info!("Starting background sync for {}/{}", owner_clone, name_clone);
                 let backfiller = processor::Backfiller::new(pool, token, 365);
                 if let Err(e) = backfiller.backfill_repo(&owner_clone, &name_clone).await {
-                    tracing::error!("Background sync failed for {}/{}: {}", owner_clone, name_clone, e);
+                    tracing::error!(
+                        "Background sync failed for {}/{}: {}",
+                        owner_clone,
+                        name_clone,
+                        e
+                    );
                 }
             });
 
