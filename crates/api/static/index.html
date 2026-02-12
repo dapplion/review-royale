@@ -244,9 +244,16 @@
                 <div id="xp-breakdown" class="bg-black/20 rounded-xl p-4 space-y-2 text-sm"></div>
             </div>
 
-            <div id="achievements-section" class="mb-8 hidden">
-                <h3 class="text-lg font-semibold mb-4">🏆 Achievements</h3>
-                <div id="achievements-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            <div id="achievements-section" class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">🏆 Achievements</h3>
+                    <a href="#" onclick="showAchievementsCatalog(); return false;" class="text-sm text-purple-400 hover:text-purple-300">View all achievements →</a>
+                </div>
+                <div id="achievements-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+                <div id="achievements-up-next" class="hidden">
+                    <h4 class="text-sm font-semibold text-gray-400 mb-3 mt-4">🔒 Up Next</h4>
+                    <div id="up-next-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
             </div>
 
             <div class="mb-8">
@@ -265,6 +272,23 @@
                     Load More
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Achievement Catalog View -->
+    <div id="achievements-view" class="hidden container mx-auto px-4 py-8 max-w-4xl">
+        <a href="#" onclick="goBackFromAchievements(); return false;" class="inline-flex items-center text-purple-400 hover:text-purple-300 mb-6 transition-colors">
+            ← <span class="ml-1">Back</span>
+        </a>
+
+        <header class="text-center mb-8">
+            <div class="text-5xl mb-4">🏆</div>
+            <h1 class="text-3xl font-bold">Achievement Catalog</h1>
+            <p class="text-gray-400 mt-2">Unlock achievements by reviewing PRs</p>
+        </header>
+
+        <div id="achievements-catalog" class="space-y-8">
+            <div class="text-center text-gray-500 py-8">Loading achievements...</div>
         </div>
     </div>
 
@@ -760,23 +784,10 @@
                     <div class="text-xs text-gray-600 mt-2">Bonuses: Fast (<1h) +10, Thorough (>5 comments) +5, Deep (>10) +10</div>
                 `;
 
-                // Display achievements
-                const achievementsSection = document.getElementById('achievements-section');
-                const achievementsGrid = document.getElementById('achievements-grid');
+                // Display achievements with progress
                 const achievements = data.achievements || [];
-                
-                if (achievements.length > 0) {
-                    achievementsSection.classList.remove('hidden');
-                    achievementsGrid.innerHTML = achievements.map(a => `
-                        <div class="bg-black/30 rounded-lg p-3 text-center border border-white/10">
-                            <div class="text-2xl mb-1">${a.emoji || '🏆'}</div>
-                            <div class="font-semibold text-sm">${a.name}</div>
-                            <div class="text-xs text-gray-500">${a.description}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    achievementsSection.classList.add('hidden');
-                }
+                const progress = await loadUserAchievementProgress(username);
+                renderAchievements(achievements, progress);
 
                 // Load activity chart
                 loadActivityChart(username);
@@ -1039,6 +1050,170 @@
                     </div>
                 </a>
             `).join('');
+        }
+
+        // Achievement functions
+        let achievementsCatalogLoaded = false;
+        let previousView = 'leaderboard'; // Track where we came from for back navigation
+
+        function getRarityColor(rarity) {
+            const colors = {
+                common: 'border-gray-500 text-gray-400',
+                uncommon: 'border-green-500 text-green-400',
+                rare: 'border-blue-500 text-blue-400',
+                epic: 'border-purple-500 text-purple-400',
+                legendary: 'border-yellow-500 text-yellow-400'
+            };
+            return colors[rarity] || colors.common;
+        }
+
+        function getRarityBg(rarity) {
+            const bgs = {
+                common: 'bg-gray-500/10',
+                uncommon: 'bg-green-500/10',
+                rare: 'bg-blue-500/10',
+                epic: 'bg-purple-500/10',
+                legendary: 'bg-yellow-500/10'
+            };
+            return bgs[rarity] || bgs.common;
+        }
+
+        async function showAchievementsCatalog() {
+            // Track where we came from
+            if (!document.getElementById('profile-view').classList.contains('hidden')) {
+                previousView = 'profile';
+            } else {
+                previousView = 'leaderboard';
+            }
+
+            document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('leaderboard-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('open-prs-view').classList.add('hidden');
+            document.getElementById('achievements-view').classList.remove('hidden');
+
+            if (!achievementsCatalogLoaded) {
+                await loadAchievementsCatalog();
+            }
+        }
+
+        function goBackFromAchievements() {
+            document.getElementById('achievements-view').classList.add('hidden');
+            if (previousView === 'profile' && currentUsername) {
+                document.getElementById('profile-view').classList.remove('hidden');
+            } else {
+                document.getElementById('leaderboard-view').classList.remove('hidden');
+            }
+        }
+
+        async function loadAchievementsCatalog() {
+            const container = document.getElementById('achievements-catalog');
+            try {
+                const response = await fetch('/api/achievements');
+                if (!response.ok) throw new Error('Failed to load achievements');
+                const data = await response.json();
+
+                container.innerHTML = data.categories.map(cat => `
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                        <h2 class="text-xl font-bold mb-4">${getCategoryEmoji(cat.name)} ${cat.name}</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${cat.achievements.map(a => `
+                                <div class="flex items-start gap-3 p-3 rounded-lg ${getRarityBg(a.rarity)} border ${getRarityColor(a.rarity)}">
+                                    <div class="text-3xl">${a.emoji}</div>
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-white">${a.name}</div>
+                                        <div class="text-sm text-gray-400">${a.description}</div>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="${getRarityColor(a.rarity)} capitalize">${a.rarity}</span>
+                                            <span class="text-purple-400">+${a.xp_reward} XP</span>
+                                            <span class="text-gray-600">${a.unlock_count} unlocked</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+
+                achievementsCatalogLoaded = true;
+            } catch (e) {
+                console.error('Failed to load achievements catalog:', e);
+                container.innerHTML = '<div class="text-center text-red-400 py-8">Failed to load achievements</div>';
+            }
+        }
+
+        function getCategoryEmoji(category) {
+            const emojis = {
+                'Milestone': '📈',
+                'Speed': '⚡',
+                'Quality': '✨',
+                'Streak': '🔥',
+                'Special': '🎯'
+            };
+            return emojis[category] || '🏆';
+        }
+
+        async function loadUserAchievementProgress(username) {
+            try {
+                const response = await fetch(`/api/users/${username}/achievements/progress`);
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (e) {
+                console.error('Failed to load achievement progress:', e);
+                return null;
+            }
+        }
+
+        function renderAchievements(achievements, progress) {
+            const achievementsGrid = document.getElementById('achievements-grid');
+            const upNextSection = document.getElementById('achievements-up-next');
+            const upNextGrid = document.getElementById('up-next-grid');
+
+            // Render unlocked achievements
+            if (achievements && achievements.length > 0) {
+                achievementsGrid.innerHTML = achievements.map(a => `
+                    <div class="bg-black/30 rounded-lg p-3 text-center border ${getRarityColor(a.emoji ? 'common' : 'common')} border-white/10">
+                        <div class="text-2xl mb-1">${a.emoji || '🏆'}</div>
+                        <div class="font-semibold text-sm">${a.name}</div>
+                        <div class="text-xs text-gray-500">${a.description}</div>
+                    </div>
+                `).join('');
+            } else {
+                achievementsGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">No achievements unlocked yet</div>';
+            }
+
+            // Render "Up Next" - closest to unlock (max 3)
+            if (progress && progress.length > 0) {
+                const upNext = progress.filter(p => !p.unlocked && p.progress_pct > 0).slice(0, 3);
+                
+                if (upNext.length > 0) {
+                    upNextSection.classList.remove('hidden');
+                    upNextGrid.innerHTML = upNext.map(p => `
+                        <div class="bg-black/20 rounded-lg p-3 border border-white/5 opacity-70">
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl grayscale">${p.emoji}</div>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-sm text-gray-300">${p.name}</div>
+                                    <div class="text-xs text-gray-500">${p.description}</div>
+                                    <div class="mt-2">
+                                        <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>${p.current}/${p.target}</span>
+                                            <span>${Math.round(p.progress_pct)}%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-700 rounded-full h-1.5">
+                                            <div class="bg-purple-500 h-1.5 rounded-full" style="width: ${p.progress_pct}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    upNextSection.classList.add('hidden');
+                }
+            } else {
+                upNextSection.classList.add('hidden');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
