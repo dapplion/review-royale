@@ -116,3 +116,49 @@ pub async fn reset_last_synced_at(pool: &PgPool, repo_id: Uuid) -> Result<(), sq
         .await?;
     Ok(())
 }
+
+/// Create a new repository (without upsert)
+pub async fn create(
+    pool: &PgPool,
+    github_id: i64,
+    owner: &str,
+    name: &str,
+) -> Result<Repository, sqlx::Error> {
+    let id = Uuid::new_v4();
+    let row = sqlx::query(
+        r#"
+        INSERT INTO repositories (id, github_id, owner, name, created_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING id, github_id, owner, name, created_at
+        "#,
+    )
+    .bind(id)
+    .bind(github_id)
+    .bind(owner)
+    .bind(name)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(Repository {
+        id: row.get("id"),
+        github_id: row.get("github_id"),
+        owner: row.get("owner"),
+        name: row.get("name"),
+        created_at: row.get("created_at"),
+    })
+}
+
+/// Get the oldest PR date for a repository (to calculate sync progress)
+pub async fn get_oldest_pr_date(
+    pool: &PgPool,
+    repo_id: Uuid,
+) -> Result<Option<DateTime<Utc>>, sqlx::Error> {
+    let row = sqlx::query(
+        "SELECT MIN(created_at) as oldest FROM pull_requests WHERE repo_id = $1",
+    )
+    .bind(repo_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.and_then(|r| r.get("oldest")))
+}

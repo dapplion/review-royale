@@ -7,26 +7,137 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use std::sync::Arc;
+use tracing::info;
 
 use crate::error::{ApiResult, DbResultExt, OptionExt};
 use crate::state::AppState;
 use common::models::Repository;
+
+/// Allowed orgs for auto-discovery
+const ALLOWED_ORGS: &[&str] = &["sigp"];
 
 pub async fn list(State(state): State<Arc<AppState>>) -> ApiResult<Json<Vec<Repository>>> {
     let repos = db::repos::list(&state.pool).await.db_err()?;
     Ok(Json(repos))
 }
 
+/// Extended repo response with sync status
+#[derive(Serialize)]
+pub struct RepoWithSyncStatus {
+    #[serde(flatten)]
+    pub repo: Repository,
+    pub sync_status: SyncStatus,
+}
+
+#[derive(Serialize)]
+pub struct SyncStatus {
+    pub syncing: bool,
+    pub last_synced_at: Option<DateTime<Utc>>,
+    pub oldest_data_at: Option<DateTime<Utc>>,
+    pub target_date: DateTime<Utc>,
+    pub progress_pct: f64,
+}
+
 pub async fn get(
     State(state): State<Arc<AppState>>,
     Path((owner, name)): Path<(String, String)>,
-) -> ApiResult<Json<Repository>> {
+) -> ApiResult<Json<RepoWithSyncStatus>> {
+    // Check if repo exists
     let repo = db::repos::get_by_name(&state.pool, &owner, &name)
         .await
-        .db_err()?
-        .not_found(format!("Repository {}/{} not found", owner, name))?;
+        .db_err()?;
 
-    Ok(Json(repo))
+    match repo {
+        Some(repo) => {
+            // Repo exists, return with sync status
+            let sync_status = get_sync_status(&state, &repo).await;
+            Ok(Json(RepoWithSyncStatus { repo, sync_status }))
+        }
+        None => {
+            // Check if org is allowed for auto-discovery
+            if !ALLOWED_ORGS.contains(&owner.to_lowercase().as_str()) {
+                return Err(crate::error::ApiError::NotFound(format!(
+                    "Repository {}/{} not found",
+                    owner, name
+                )));
+            }
+
+            // Auto-create and start syncing
+            info!("Auto-discovering repo {}/{}", owner, name);
+
+            // Try to create the repo (will fail if GitHub repo doesn't exist)
+            let github = github::GitHubClient::new(&state.config.github_token);
+            let gh_repo = github
+                .get_repo(&owner, &name)
+                .await
+                .map_err(|e| crate::error::ApiError::GitHub(e.to_string()))?;
+
+            // Create repo in DB
+            let repo = db::repos::create(&state.pool, gh_repo.id as i64, &owner, &name)
+                .await
+                .db_err()?;
+
+            // Spawn background sync
+            let pool = state.pool.clone();
+            let token = state.config.github_token.clone();
+            let owner_clone = owner.clone();
+            let name_clone = name.clone();
+            tokio::spawn(async move {
+                info!("Starting background sync for {}/{}", owner_clone, name_clone);
+                let backfiller = processor::Backfiller::new(pool, token, 365);
+                if let Err(e) = backfiller.backfill_repo(&owner_clone, &name_clone).await {
+                    tracing::error!("Background sync failed for {}/{}: {}", owner_clone, name_clone, e);
+                }
+            });
+
+            let sync_status = SyncStatus {
+                syncing: true,
+                last_synced_at: None,
+                oldest_data_at: None,
+                target_date: Utc::now() - chrono::Duration::days(365),
+                progress_pct: 0.0,
+            };
+
+            Ok(Json(RepoWithSyncStatus { repo, sync_status }))
+        }
+    }
+}
+
+async fn get_sync_status(state: &AppState, repo: &Repository) -> SyncStatus {
+    let last_synced = db::repos::get_last_synced_at(&state.pool, repo.id)
+        .await
+        .ok()
+        .flatten();
+
+    let oldest_data = db::repos::get_oldest_pr_date(&state.pool, repo.id)
+        .await
+        .ok()
+        .flatten();
+
+    let target_date = Utc::now() - chrono::Duration::days(365);
+
+    // Calculate progress: how much of the 365-day window we have data for
+    let progress_pct = match oldest_data {
+        Some(oldest) => {
+            let total_days = 365.0;
+            let days_covered = (Utc::now() - oldest).num_days() as f64;
+            (days_covered / total_days * 100.0).min(100.0)
+        }
+        None => 0.0,
+    };
+
+    // Consider syncing if last sync was recent (within 5 min) and progress < 100%
+    let syncing = last_synced
+        .map(|t| (Utc::now() - t).num_minutes() < 5 && progress_pct < 100.0)
+        .unwrap_or(false);
+
+    SyncStatus {
+        syncing,
+        last_synced_at: last_synced,
+        oldest_data_at: oldest_data,
+        target_date,
+        progress_pct,
+    }
 }
 
 /// Open PR response

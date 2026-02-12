@@ -285,6 +285,17 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] Active reviewers list
 - [x] Sort/filter options (by age, status, reviews count)
 
+### M12: Auto-Discover Repos
+- [ ] Auto-discover new repos in allowed orgs (sigp)
+- [ ] When navigating to unknown repo (e.g., sigp/anchor):
+  - [ ] Automatically trigger backfill/sync
+  - [ ] Show "Syncing..." UI state while fetching
+  - [ ] Display thin progress bar at top showing sync progress
+- [ ] Progress bar shows sync completion (days synced / total days)
+- [ ] UI tests with screenshots to validate all states
+- [ ] API: `POST /api/repos/:owner/:name/sync` to trigger sync
+- [ ] API: `GET /api/repos/:owner/:name/sync-status` for progress
+
 ### M11: Achievement Catalog
 - [x] Full achievement gallery page (`/achievements`)
   - [x] Lists all possible achievements with descriptions

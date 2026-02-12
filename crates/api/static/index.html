@@ -47,6 +47,13 @@
     </style>
 </head>
 <body class="min-h-screen text-white font-sans">
+    <!-- Sync Progress Bar (shown when repo is syncing or not fully synced) -->
+    <div id="sync-progress-bar" class="fixed top-0 left-0 right-0 z-50 hidden">
+        <div class="h-1 bg-gray-800">
+            <div id="sync-progress-fill" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div id="sync-status-text" class="absolute top-1 right-2 text-xs text-gray-400 bg-gray-900/80 px-2 py-0.5 rounded"></div>
+    </div>
     <!-- Landing Page View -->
     <div id="landing-view" class="container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-12">
@@ -359,9 +366,70 @@
         let reviewsPerPage = 20;
         let currentRepo = null; // { owner, name } or null for global
         let availableRepos = [];
+        let syncStatus = null; // { syncing, progress_pct, last_synced_at }
+        let syncPollInterval = null;
         
         // Allowed orgs for public access
         const ALLOWED_ORGS = ['sigp'];
+
+        // Sync progress bar functions
+        function showSyncProgress(status) {
+            const bar = document.getElementById('sync-progress-bar');
+            const fill = document.getElementById('sync-progress-fill');
+            const text = document.getElementById('sync-status-text');
+            
+            if (!status || status.progress_pct >= 100) {
+                bar.classList.add('hidden');
+                if (syncPollInterval) {
+                    clearInterval(syncPollInterval);
+                    syncPollInterval = null;
+                }
+                return;
+            }
+            
+            bar.classList.remove('hidden');
+            fill.style.width = `${status.progress_pct}%`;
+            
+            if (status.syncing) {
+                text.textContent = `Syncing... ${Math.round(status.progress_pct)}%`;
+            } else {
+                text.textContent = `${Math.round(status.progress_pct)}% synced`;
+            }
+        }
+
+        async function fetchSyncStatus() {
+            if (!currentRepo) return null;
+            try {
+                const response = await fetch(`/api/repos/${currentRepo.owner}/${currentRepo.name}`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                return data.sync_status;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function startSyncPolling() {
+            if (syncPollInterval) clearInterval(syncPollInterval);
+            
+            const status = await fetchSyncStatus();
+            syncStatus = status;
+            showSyncProgress(status);
+            
+            // If syncing, poll every 5 seconds
+            if (status && status.syncing) {
+                syncPollInterval = setInterval(async () => {
+                    const newStatus = await fetchSyncStatus();
+                    syncStatus = newStatus;
+                    showSyncProgress(newStatus);
+                    
+                    // Reload leaderboard when sync completes
+                    if (newStatus && !newStatus.syncing && newStatus.progress_pct > (status?.progress_pct || 0)) {
+                        loadLeaderboard(currentPeriod);
+                    }
+                }, 5000);
+            }
+        }
 
         // Parse URL path to get repo context
         function parseUrl() {
@@ -589,7 +657,10 @@
             currentPeriod = period;
             updatePeriodButtons(period);
             const body = document.getElementById('leaderboard-body');
+            const emptyState = document.getElementById('empty-state');
             body.innerHTML = `<div class="loading-state"><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div><div class="px-6 py-4 border-b border-white/5"><div class="h-12 loading-skeleton rounded"></div></div></div>`;
+            emptyState?.classList.add('hidden');
+            
             try {
                 const url = currentRepo 
                     ? `/api/repos/${currentRepo.owner}/${currentRepo.name}/leaderboard?period=${period}&limit=25`
@@ -597,9 +668,35 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to load leaderboard');
                 const data = await response.json();
+                
+                // Check if we got empty data because repo is syncing
+                if (data.length === 0 && syncStatus?.syncing) {
+                    body.innerHTML = `<div class="px-6 py-16 text-center">
+                        <div class="text-6xl mb-4 animate-pulse">🔄</div>
+                        <h3 class="text-xl font-semibold text-gray-300 mb-2">Syncing Repository</h3>
+                        <p class="text-gray-500">Fetching PR review data from GitHub...</p>
+                        <p class="text-sm text-gray-600 mt-2">This may take a few minutes for large repos</p>
+                        <div class="mt-4 w-48 mx-auto bg-gray-700 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full transition-all" style="width: ${syncStatus.progress_pct}%"></div>
+                        </div>
+                    </div>`;
+                    return;
+                }
+                
                 renderLeaderboard(data);
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
+                
+                // Check if this might be a new repo being synced
+                if (currentRepo && syncStatus?.syncing) {
+                    body.innerHTML = `<div class="px-6 py-16 text-center">
+                        <div class="text-6xl mb-4 animate-pulse">🔄</div>
+                        <h3 class="text-xl font-semibold text-gray-300 mb-2">Syncing Repository</h3>
+                        <p class="text-gray-500">Fetching PR review data from GitHub...</p>
+                    </div>`;
+                    return;
+                }
+                
                 body.innerHTML = `<div class="px-6 py-16 text-center"><div class="text-4xl mb-4">⚠️</div><p class="text-gray-400">Failed to load leaderboard</p><button onclick="loadLeaderboard('${period}')" class="mt-4 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-colors">Retry</button></div>`;
             }
         }
@@ -1322,6 +1419,11 @@
                 await loadLeaderboard('month');
             }
             loadDataInfo();
+            
+            // Start sync status polling for repo-scoped views
+            if (currentRepo) {
+                startSyncPolling();
+            }
         });
     </script>
 </body>
