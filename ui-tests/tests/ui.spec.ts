@@ -158,6 +158,93 @@ test.describe('Responsive Layout', () => {
   });
 });
 
+test.describe('Achievement Catalog (M11)', () => {
+  test('achievement catalog displays all achievements', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
+    
+    // Open a user profile first
+    await page.locator('.leaderboard-row').first().click();
+    await page.waitForSelector('#profile-view:not(.hidden)', { timeout: 5000 });
+    
+    // Click "View all achievements" link
+    await page.locator('a:has-text("View all achievements")').click();
+    await page.waitForSelector('#achievements-view:not(.hidden)', { timeout: 5000 });
+    
+    // Should show achievement catalog
+    await expect(page.locator('#achievements-catalog')).toBeVisible();
+    
+    // Should have category sections (Milestone, Speed, Quality, etc.)
+    const categories = await page.locator('#achievements-catalog h2').count();
+    expect(categories).toBeGreaterThanOrEqual(3);
+    
+    // Take screenshot
+    await page.screenshot({ path: `screenshots/achievement-catalog-${test.info().project.name}.png`, fullPage: true });
+  });
+
+  test('profile shows achievements section with Up Next', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
+    
+    // Open profile
+    await page.locator('.leaderboard-row').first().click();
+    await page.waitForSelector('#profile-view:not(.hidden)', { timeout: 5000 });
+    
+    // Wait for achievements to load
+    await page.waitForTimeout(2000);
+    
+    // Achievements section should be visible
+    await expect(page.locator('#achievements-section')).toBeVisible();
+    
+    // "View all achievements" link should be present
+    await expect(page.locator('a:has-text("View all achievements")')).toBeVisible();
+    
+    // Take screenshot
+    await page.screenshot({ path: `screenshots/profile-achievements-${test.info().project.name}.png`, fullPage: true });
+  });
+
+  test('Up Next section shows progress bars', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
+    
+    // Open profile
+    await page.locator('.leaderboard-row').first().click();
+    await page.waitForSelector('#profile-view:not(.hidden)', { timeout: 5000 });
+    
+    // Wait for progress data to load
+    await page.waitForTimeout(2000);
+    
+    // Check if Up Next section exists (may be hidden if no progress)
+    const upNextSection = page.locator('#achievements-up-next');
+    
+    // If visible, verify it has progress bars
+    if (await upNextSection.isVisible()) {
+      const progressBars = await page.locator('#up-next-grid .bg-purple-500').count();
+      expect(progressBars).toBeGreaterThan(0);
+      
+      await page.screenshot({ path: `screenshots/profile-up-next-${test.info().project.name}.png` });
+    }
+  });
+
+  test('achievement catalog has rarity colors', async ({ page }) => {
+    await page.goto(BASE_URL);
+    await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
+    
+    // Open profile and navigate to catalog
+    await page.locator('.leaderboard-row').first().click();
+    await page.waitForSelector('#profile-view:not(.hidden)', { timeout: 5000 });
+    await page.locator('a:has-text("View all achievements")').click();
+    await page.waitForSelector('#achievements-view:not(.hidden)', { timeout: 5000 });
+    
+    // Should have achievements with different rarity colors
+    // Common (gray), Uncommon (green), Rare (blue), Epic (purple), Legendary (yellow)
+    const achievements = await page.locator('#achievements-catalog [class*="border-"]').count();
+    expect(achievements).toBeGreaterThan(5);
+    
+    await page.screenshot({ path: `screenshots/achievement-rarities-${test.info().project.name}.png`, fullPage: true });
+  });
+});
+
 test.describe('Visual Elements', () => {
   test('level badges have correct colors', async ({ page }) => {
     await page.goto(BASE_URL);

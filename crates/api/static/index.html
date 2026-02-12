@@ -1182,9 +1182,15 @@
                 achievementsGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">No achievements unlocked yet</div>';
             }
 
-            // Render "Up Next" - closest to unlock (max 3)
+            // Render "Up Next" - show closest to unlock, or suggested if no progress
             if (progress && progress.length > 0) {
-                const upNext = progress.filter(p => !p.unlocked && p.progress_pct > 0).slice(0, 3);
+                // First try achievements with progress, then fall back to any unlockable
+                let upNext = progress.filter(p => !p.unlocked && p.progress_pct > 0).slice(0, 3);
+                
+                // If no progress on anything, show first 3 achievable ones
+                if (upNext.length === 0) {
+                    upNext = progress.filter(p => !p.unlocked && p.target > 0).slice(0, 3);
+                }
                 
                 if (upNext.length > 0) {
                     upNextSection.classList.remove('hidden');
@@ -1201,7 +1207,7 @@
                                             <span>${Math.round(p.progress_pct)}%</span>
                                         </div>
                                         <div class="w-full bg-gray-700 rounded-full h-1.5">
-                                            <div class="bg-purple-500 h-1.5 rounded-full" style="width: ${p.progress_pct}%"></div>
+                                            <div class="bg-purple-500 h-1.5 rounded-full" style="width: ${Math.max(p.progress_pct, 2)}%"></div>
                                         </div>
                                     </div>
                                 </div>
