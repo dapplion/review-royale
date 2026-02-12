@@ -2,9 +2,25 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL || 'https://review-royale.fly.dev';
 
+test.describe('Landing Page', () => {
+  test('displays landing page at root URL', async ({ page }) => {
+    await page.goto(BASE_URL);
+    
+    // Wait for landing content to load
+    await page.waitForSelector('#landing-view', { timeout: 10000 });
+    
+    // Should show the landing page content
+    await expect(page.locator('text=What is Review Royale?')).toBeVisible();
+    
+    // Take screenshot
+    await page.screenshot({ path: `screenshots/landing-${test.info().project.name}.png`, fullPage: true });
+  });
+});
+
 test.describe('Leaderboard', () => {
   test('displays global leaderboard with users', async ({ page }) => {
-    await page.goto(BASE_URL);
+    // Navigate to a repo to see the leaderboard (root shows landing page)
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     
     // Wait for leaderboard to load
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
@@ -22,7 +38,7 @@ test.describe('Leaderboard', () => {
   });
 
   test('period filter changes data', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Screenshot default view (This Month)
@@ -45,7 +61,7 @@ test.describe('Leaderboard', () => {
 
 test.describe('User Profile', () => {
   test('displays user profile with stats', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Click on first user to open profile
@@ -69,7 +85,7 @@ test.describe('User Profile', () => {
   });
 
   test('profile period filter changes XP', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open profile
@@ -138,7 +154,7 @@ test.describe('Responsive Layout', () => {
       test.skip();
     }
     
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Leaderboard should be visible
@@ -160,7 +176,7 @@ test.describe('Responsive Layout', () => {
 
 test.describe('Achievement Catalog (M11)', () => {
   test('achievement catalog displays all achievements', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open a user profile first
@@ -183,7 +199,7 @@ test.describe('Achievement Catalog (M11)', () => {
   });
 
   test('profile shows achievements section with Up Next', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open profile
@@ -204,7 +220,7 @@ test.describe('Achievement Catalog (M11)', () => {
   });
 
   test('Up Next section shows progress bars', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open profile
@@ -227,7 +243,7 @@ test.describe('Achievement Catalog (M11)', () => {
   });
 
   test('achievement catalog has rarity colors', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open profile and navigate to catalog
@@ -247,7 +263,7 @@ test.describe('Achievement Catalog (M11)', () => {
 
 test.describe('Visual Elements', () => {
   test('level badges have correct colors', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Check that level badges exist and have gradient classes
@@ -259,7 +275,7 @@ test.describe('Visual Elements', () => {
   });
 
   test('XP breakdown shows formula', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/sigp/lighthouse`);
     await page.waitForSelector('.leaderboard-row', { timeout: 10000 });
     
     // Open profile
