@@ -286,17 +286,17 @@ Level = floor(sqrt(XP / 100)) + 1
 - [ ] Sort/filter options (by age, difficulty, status)
 
 ### M11: Achievement Catalog
-- [ ] Full achievement gallery page (`/achievements`)
-  - [ ] Lists all possible achievements with descriptions
-  - [ ] Grouped by category (Milestone, Speed, Quality, Streak/Special)
-  - [ ] Shows icon, name, description, XP reward, rarity
-- [ ] Profile "Up Next" section
-  - [ ] Shows 2-3 closest-to-unlock achievements (grayed out)
-  - [ ] Progress indicators where applicable (e.g., "3/10 bugs found")
-  - [ ] "View all achievements →" link
-- [ ] API endpoints:
-  - [ ] `GET /api/achievements` — all achievement definitions
-  - [ ] `GET /api/users/:id/achievements/progress` — user's progress toward locked achievements
+- [x] Full achievement gallery page (`/achievements`)
+  - [x] Lists all possible achievements with descriptions
+  - [x] Grouped by category (Milestone, Speed, Quality, Streak/Special)
+  - [x] Shows icon, name, description, XP reward, rarity
+- [x] Profile "Up Next" section
+  - [x] Shows 2-3 closest-to-unlock achievements (grayed out)
+  - [x] Progress indicators where applicable (e.g., "3/10 bugs found")
+  - [x] "View all achievements →" link
+- [x] API endpoints:
+  - [x] `GET /api/achievements` — all achievement definitions
+  - [x] `GET /api/users/:id/achievements/progress` — user's progress toward locked achievements
 
 ## Development Workflow: AI-Assisted UI Iteration
 

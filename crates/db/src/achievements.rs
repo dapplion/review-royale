@@ -398,14 +398,21 @@ pub async fn get_user_progress(
     let mut progress_list: Vec<AchievementProgress> = achievements
         .into_iter()
         .map(|a| {
-            let (current, target) = get_progress_values(&a.id, total_reviews, first_reviews, deep_reviews, prs_authored, prs_merged);
+            let (current, target) = get_progress_values(
+                &a.id,
+                total_reviews,
+                first_reviews,
+                deep_reviews,
+                prs_authored,
+                prs_merged,
+            );
             let is_unlocked = unlocked.contains(&a.id);
             let progress_pct = if target > 0 {
                 ((current as f64 / target as f64) * 100.0).min(100.0)
             } else {
                 0.0
             };
-            
+
             AchievementProgress {
                 achievement_id: a.id.clone(),
                 name: a.name,
@@ -423,12 +430,13 @@ pub async fn get_user_progress(
         .collect();
 
     // Sort: unlocked last, then by progress (closest to unlock first)
-    progress_list.sort_by(|a, b| {
-        match (a.unlocked, b.unlocked) {
-            (true, false) => std::cmp::Ordering::Greater,
-            (false, true) => std::cmp::Ordering::Less,
-            _ => b.progress_pct.partial_cmp(&a.progress_pct).unwrap_or(std::cmp::Ordering::Equal),
-        }
+    progress_list.sort_by(|a, b| match (a.unlocked, b.unlocked) {
+        (true, false) => std::cmp::Ordering::Greater,
+        (false, true) => std::cmp::Ordering::Less,
+        _ => b
+            .progress_pct
+            .partial_cmp(&a.progress_pct)
+            .unwrap_or(std::cmp::Ordering::Equal),
     });
 
     Ok(progress_list)
@@ -456,8 +464,8 @@ fn get_progress_values(
         "speed_demon" => (0, 10), // Would need to query fast reviews separately
         // Quality achievements
         "thorough" => (deep_reviews.min(5), 5),
-        "bug_hunter" => (0, 10), // Would need AI categorization data
-        "nitpicker" => (0, 50), // Would need nit comment tracking
+        "bug_hunter" => (0, 10),  // Would need AI categorization data
+        "nitpicker" => (0, 50),   // Would need nit comment tracking
         // PR author achievements
         "first_pr" => (prs_authored.min(1), 1),
         "pr_merged_10" => (prs_merged.min(10), 10),
