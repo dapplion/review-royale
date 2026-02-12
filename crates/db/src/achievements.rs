@@ -372,15 +372,8 @@ pub async fn get_user_progress(
     let stats = sqlx::query(
         r#"
         SELECT 
-            (SELECT COUNT(*) FROM reviews r 
-             JOIN pull_requests pr ON pr.id = r.pr_id 
-             WHERE r.reviewer_id = $1) as total_reviews,
-            (SELECT COUNT(*) FROM reviews r 
-             JOIN pull_requests pr ON pr.id = r.pr_id 
-             WHERE r.reviewer_id = $1 AND r.first_reviewer) as first_reviews,
-            (SELECT COUNT(*) FROM reviews r 
-             JOIN pull_requests pr ON pr.id = r.pr_id 
-             WHERE r.reviewer_id = $1 AND r.comments_count >= 10) as deep_reviews,
+            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1) as total_reviews,
+            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND comments_count >= 10) as deep_reviews,
             (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1) as prs_authored,
             (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1 AND state = 'merged') as prs_merged
         "#,
@@ -390,7 +383,7 @@ pub async fn get_user_progress(
     .await?;
 
     let total_reviews: i64 = stats.get("total_reviews");
-    let first_reviews: i64 = stats.get("first_reviews");
+    let first_reviews: i64 = 0; // Would need first_review_at tracking per PR
     let deep_reviews: i64 = stats.get("deep_reviews");
     let prs_authored: i64 = stats.get("prs_authored");
     let prs_merged: i64 = stats.get("prs_merged");
