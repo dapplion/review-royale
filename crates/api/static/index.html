@@ -1182,14 +1182,14 @@
                 achievementsGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-4">No achievements unlocked yet</div>';
             }
 
-            // Render "Up Next" - show closest to unlock, or suggested if no progress
+            // Render "Up Next" - show closest to unlock (but not already at 100%)
             if (progress && progress.length > 0) {
-                // First try achievements with progress, then fall back to any unlockable
-                let upNext = progress.filter(p => !p.unlocked && p.progress_pct > 0).slice(0, 3);
+                // Filter: not unlocked, has progress but not complete (100% should be awarded already)
+                let upNext = progress.filter(p => !p.unlocked && p.progress_pct > 0 && p.progress_pct < 100).slice(0, 3);
                 
-                // If no progress on anything, show first 3 achievable ones
+                // If no partial progress, show first 3 achievable ones (excluding 100% which should be awarded)
                 if (upNext.length === 0) {
-                    upNext = progress.filter(p => !p.unlocked && p.target > 0).slice(0, 3);
+                    upNext = progress.filter(p => !p.unlocked && p.target > 0 && p.progress_pct < 100).slice(0, 3);
                 }
                 
                 if (upNext.length > 0) {

@@ -298,6 +298,12 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] `GET /api/achievements` — all achievement definitions
   - [x] `GET /api/users/:id/achievements/progress` — user's progress toward locked achievements
 
+## Development Rules
+
+1. **Always screenshot and visually verify** features and pages after implementation
+2. **Automatically fix issues** found during verification - don't ask, just fix
+3. **Progress the plan** - don't ask questions, make decisions and move forward
+
 ## Development Workflow: AI-Assisted UI Iteration
 
 Visual feedback loop for frontend development:
