@@ -217,5 +217,6 @@ ON CONFLICT (id) DO UPDATE SET
     xp_reward = EXCLUDED.xp_reward,
     rarity = EXCLUDED.rarity;
 
--- Remove deprecated achievements
+-- Remove deprecated achievements (must delete user_achievements first due to FK)
+DELETE FROM user_achievements WHERE achievement_id = 'night_owl';
 DELETE FROM achievements WHERE id = 'night_owl';
