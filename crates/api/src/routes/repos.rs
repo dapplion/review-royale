@@ -83,7 +83,10 @@ pub async fn get(
             let owner_clone = owner.clone();
             let name_clone = name.clone();
             tokio::spawn(async move {
-                info!("Starting background sync for {}/{}", owner_clone, name_clone);
+                info!(
+                    "Starting background sync for {}/{}",
+                    owner_clone, name_clone
+                );
                 let backfiller = processor::Backfiller::new(pool, token, 365);
                 if let Err(e) = backfiller.backfill_repo(&owner_clone, &name_clone).await {
                     tracing::error!(

@@ -153,12 +153,10 @@ pub async fn get_oldest_pr_date(
     pool: &PgPool,
     repo_id: Uuid,
 ) -> Result<Option<DateTime<Utc>>, sqlx::Error> {
-    let row = sqlx::query(
-        "SELECT MIN(created_at) as oldest FROM pull_requests WHERE repo_id = $1",
-    )
-    .bind(repo_id)
-    .fetch_optional(pool)
-    .await?;
+    let row = sqlx::query("SELECT MIN(created_at) as oldest FROM pull_requests WHERE repo_id = $1")
+        .bind(repo_id)
+        .fetch_optional(pool)
+        .await?;
 
     Ok(row.and_then(|r| r.get("oldest")))
 }
