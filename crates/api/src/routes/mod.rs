@@ -1,5 +1,6 @@
 //! API routes
 
+pub mod achievements;
 pub mod backfill;
 pub mod categorize;
 pub mod health;
