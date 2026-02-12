@@ -265,14 +265,14 @@ Level = floor(sqrt(XP / 100)) + 1
 - [x] AI vision verification of screenshots (`npm run verify` uses Claude Vision)
 - [x] CI integration for visual regression
 
-### M9: Polish & Generalization
+### M9: Polish & Generalization ✅
 - [x] Remove Night Owl achievement (can't know contributor timezones)
 - [x] Add creative/fun achievements
-- [ ] Landing page redesign:
-  - [ ] Root URL shows intro/marketing landing page
-  - [ ] List of tracked repositories with stats
-  - [ ] Link to GitHub source
-  - [ ] "Add your repo" CTA / request access flow
+- [x] Landing page redesign:
+  - [x] Root URL shows intro/marketing landing page
+  - [x] List of tracked repositories
+  - [x] Link to GitHub source
+  - [x] "Request access" CTA (links to Twitter)
 
 ### M10: Open PRs Dashboard ✅
 - [x] Show total open PRs count on leaderboard page (clickable)
