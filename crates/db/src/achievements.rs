@@ -464,8 +464,8 @@ fn get_progress_values(
         "speed_demon" => (0, 10), // Would need to query fast reviews separately
         // Quality achievements
         "thorough" => (deep_reviews.min(5), 5),
-        "bug_hunter" => (0, 10),  // Would need AI categorization data
-        "nitpicker" => (0, 50),   // Would need nit comment tracking
+        "bug_hunter" => (0, 10), // Would need AI categorization data
+        "nitpicker" => (0, 50),  // Would need nit comment tracking
         // PR author achievements
         "first_pr" => (prs_authored.min(1), 1),
         "pr_merged_10" => (prs_merged.min(10), 10),
