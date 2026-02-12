@@ -283,7 +283,7 @@ Level = floor(sqrt(XP / 100)) + 1
   - [x] Review status (approved/changes_requested/reviewed/needs_review)
   - [x] Time waiting for review (age in hours/days)
   - [x] Active reviewers list
-- [ ] Sort/filter options (by age, difficulty, status)
+- [x] Sort/filter options (by age, status, reviews count)
 
 ### M11: Achievement Catalog
 - [x] Full achievement gallery page (`/achievements`)
