@@ -190,6 +190,9 @@ test.describe('Achievement Catalog (M11)', () => {
     // Should show achievement catalog
     await expect(page.locator('#achievements-catalog')).toBeVisible();
     
+    // Wait for categories to load (h2 elements appear after API response)
+    await page.waitForSelector('#achievements-catalog h2', { timeout: 10000 });
+    
     // Should have category sections (Milestone, Speed, Quality, etc.)
     const categories = await page.locator('#achievements-catalog h2').count();
     expect(categories).toBeGreaterThanOrEqual(3);
@@ -251,6 +254,9 @@ test.describe('Achievement Catalog (M11)', () => {
     await page.waitForSelector('#profile-view:not(.hidden)', { timeout: 5000 });
     await page.locator('a:has-text("View all achievements")').click();
     await page.waitForSelector('#achievements-view:not(.hidden)', { timeout: 5000 });
+    
+    // Wait for categories to load
+    await page.waitForSelector('#achievements-catalog h2', { timeout: 10000 });
     
     // Should have achievements with different rarity colors
     // Common (gray), Uncommon (green), Rare (blue), Epic (purple), Legendary (yellow)
