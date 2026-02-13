@@ -98,10 +98,10 @@
         <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8">
             <h2 class="text-2xl font-bold mb-4">🚀 Want to track your repo?</h2>
             <p class="text-gray-300 mb-4">
-                Review Royale is currently in early access. Request access to track your GitHub repository.
+                Review Royale is currently in early access. Request access to track your GitHub organization.
             </p>
-            <a href="https://twitter.com/dapplion" target="_blank" class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold transition-colors">
-                Request Access on Twitter
+            <a id="request-access-btn" href="#" onclick="requestAccess(); return false;" class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold transition-colors">
+                🐦 Request Access on Twitter
             </a>
         </div>
 
@@ -371,6 +371,16 @@
         
         // Allowed orgs for public access
         const ALLOWED_ORGS = ['sigp'];
+
+        // Pre-filled tweet for requesting access
+        function getTweetUrl(org) {
+            const text = `@dapplion can you add ${org || 'our org'} to Review Royale? 👑\n\nhttps://review-royale.fly.dev`;
+            return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+        }
+
+        function requestAccess(org) {
+            window.open(getTweetUrl(org), '_blank');
+        }
 
         // Sync progress bar functions
         function showSyncProgress(status) {
@@ -1173,8 +1183,9 @@
                     <div class="text-6xl mb-4">🔒</div>
                     <h3 class="text-xl font-semibold text-gray-300 mb-2">Access Restricted</h3>
                     <p class="text-gray-500 mb-4">The <strong>${org}</strong> organization is not publicly accessible yet.</p>
-                    <p class="text-gray-600 text-sm">Want to track your repo? <a href="https://twitter.com/daboross" target="_blank" class="text-purple-400 hover:text-purple-300">Request access on Twitter</a></p>
-                    <button onclick="window.location.href='/'" class="mt-6 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition-colors">Back to Global Leaderboard</button>
+                    <a href="${getTweetUrl(org)}" target="_blank" class="inline-block mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold transition-colors">🐦 Request Access on Twitter</a>
+                    <br>
+                    <button onclick="window.location.href='/'" class="mt-4 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-gray-400">Back to Home</button>
                 </div>
             `;
         }
