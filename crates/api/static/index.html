@@ -521,23 +521,7 @@
         }
 
         function renderRepoSelector() {
-            const container = document.getElementById('repo-selector');
-            if (!container || availableRepos.length <= 1) return;
-            
-            const options = [
-                `<option value="">All Repositories</option>`,
-                ...availableRepos.map(r => {
-                    const selected = currentRepo && currentRepo.owner === r.owner && currentRepo.name === r.name ? 'selected' : '';
-                    return `<option value="${r.owner}/${r.name}" ${selected}>${r.owner}/${r.name}</option>`;
-                })
-            ].join('');
-            
-            container.innerHTML = `
-                <select onchange="selectRepo(this.value)" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
-                    ${options}
-                </select>
-            `;
-            container.classList.remove('hidden');
+            // Removed — repo switching is done via URL, dropdown doesn't scale with many repos
         }
 
         function selectRepo(value) {
