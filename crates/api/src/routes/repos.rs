@@ -14,7 +14,7 @@ use crate::state::AppState;
 use common::models::Repository;
 
 /// Allowed orgs for auto-discovery
-const ALLOWED_ORGS: &[&str] = &["sigp", "ethereum"];
+const ALLOWED_ORGS: &[&str] = &["sigp", "ethereum", "chainsafe"];
 
 pub async fn list(State(state): State<Arc<AppState>>) -> ApiResult<Json<Vec<Repository>>> {
     let repos = db::repos::list(&state.pool).await.db_err()?;
