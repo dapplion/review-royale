@@ -1,2 +1,3 @@
 [build]
-target-dir = "/mnt/ssd/builds/review-royale"
+# CI runners don't have /mnt/ssd. Keep this relative to the workspace.
+target-dir = "target"
