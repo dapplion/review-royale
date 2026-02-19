@@ -14,7 +14,7 @@ use crate::state::AppState;
 use common::models::Repository;
 
 /// Allowed orgs for auto-discovery
-const ALLOWED_ORGS: &[&str] = &["sigp", "ethereum", "chainsafe", "OffchainLabs"];
+const ALLOWED_ORGS: &[&str] = &["sigp", "ethereum", "chainsafe", "offchainlabs"];
 
 pub async fn list(State(state): State<Arc<AppState>>) -> ApiResult<Json<Vec<Repository>>> {
     let repos = db::repos::list(&state.pool).await.db_err()?;
@@ -55,7 +55,8 @@ pub async fn get(
         }
         None => {
             // Check if org is allowed for auto-discovery
-            if !ALLOWED_ORGS.contains(&owner.to_lowercase().as_str()) {
+            let owner_lc = owner.to_lowercase();
+            if !ALLOWED_ORGS.contains(&owner_lc.as_str()) {
                 return Err(crate::error::ApiError::NotFound(format!(
                     "Repository {}/{} not found",
                     owner, name
