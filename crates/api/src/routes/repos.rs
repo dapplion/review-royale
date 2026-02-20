@@ -100,7 +100,10 @@ pub async fn get(
                 }
 
                 // After fetching raw GitHub data, compute sessions + XP + achievements
-                info!("Recalculating XP after sync for {}/{}", owner_clone, name_clone);
+                info!(
+                    "Recalculating XP after sync for {}/{}",
+                    owner_clone, name_clone
+                );
                 if let Err(e) = processor::recalculate_all_xp(&pool).await {
                     tracing::error!(
                         "XP recalculation failed after sync for {}/{}: {}",
