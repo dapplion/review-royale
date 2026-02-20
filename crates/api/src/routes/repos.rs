@@ -88,10 +88,22 @@ pub async fn get(
                     "Starting background sync for {}/{}",
                     owner_clone, name_clone
                 );
-                let backfiller = processor::Backfiller::new(pool, token, 365);
+                let backfiller = processor::Backfiller::new(pool.clone(), token, 365);
                 if let Err(e) = backfiller.backfill_repo(&owner_clone, &name_clone).await {
                     tracing::error!(
                         "Background sync failed for {}/{}: {}",
+                        owner_clone,
+                        name_clone,
+                        e
+                    );
+                    return;
+                }
+
+                // After fetching raw GitHub data, compute sessions + XP + achievements
+                info!("Recalculating XP after sync for {}/{}", owner_clone, name_clone);
+                if let Err(e) = processor::recalculate_all_xp(&pool).await {
+                    tracing::error!(
+                        "XP recalculation failed after sync for {}/{}: {}",
                         owner_clone,
                         name_clone,
                         e
