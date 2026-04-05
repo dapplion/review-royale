@@ -19,6 +19,9 @@ pub struct BackfillParams {
     /// Force full backfill, ignoring last_synced_at
     #[serde(default)]
     pub force: bool,
+    /// Skip PRs that already exist in the database (only fetch new ones)
+    #[serde(default)]
+    pub skip_existing: bool,
 }
 
 fn default_max_days() -> u32 {
@@ -68,10 +71,11 @@ pub async fn trigger(
         }
     }
 
-    let backfiller = processor::Backfiller::new(
+    let backfiller = processor::Backfiller::with_options(
         state.pool.clone(),
         state.config.github_token.clone(),
         params.max_days,
+        params.skip_existing,
     );
 
     match backfiller.backfill_repo(&owner, &name).await {
