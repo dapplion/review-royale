@@ -240,6 +240,7 @@ pub async fn get_season_leaderboard(
                     first_reviews: row.get("first_reviews"),
                     ..Default::default()
                 },
+                last_review_at: None,
             }
         })
         .collect();
