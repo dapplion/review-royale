@@ -293,6 +293,8 @@ pub struct LeaderboardEntry {
     pub user: User,
     pub score: i64,
     pub stats: UserStats,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_review_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// A team of reviewers

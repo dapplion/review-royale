@@ -36,7 +36,8 @@ pub async fn get_leaderboard(
                 COUNT(DISTINCT r.pr_id)::int as prs_reviewed,
                 COALESCE(SUM(r.comments_count), 0)::int as comments_written,
                 COALESCE(SUM(r.xp_earned), 0)::bigint as period_xp,
-                COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews
+                COALESCE((SELECT COUNT(*) FROM first_reviews fr WHERE fr.reviewer_id = u.id), 0)::int as first_reviews,
+                MAX(r.submitted_at) as last_review_at
             FROM users u
             LEFT JOIN reviews r ON r.reviewer_id = u.id AND r.submitted_at >= $1
             LEFT JOIN pull_requests pr ON pr.id = r.pr_id
@@ -53,7 +54,8 @@ pub async fn get_leaderboard(
             us.prs_reviewed,
             us.comments_written,
             us.first_reviews,
-            us.period_xp
+            us.period_xp,
+            us.last_review_at
         FROM users u
         JOIN user_stats us ON us.id = u.id
         WHERE u.login NOT LIKE '%[bot]'
@@ -85,7 +87,7 @@ pub async fn get_leaderboard(
             };
             LeaderboardEntry {
                 rank: (idx + 1) as i32,
-                score: period_xp, // Use period-specific XP for ranking
+                score: period_xp,
                 user,
                 stats: UserStats {
                     reviews_given: row.get("reviews_given"),
@@ -94,6 +96,7 @@ pub async fn get_leaderboard(
                     first_reviews: row.get("first_reviews"),
                     ..Default::default()
                 },
+                last_review_at: row.get("last_review_at"),
             }
         })
         .collect();
