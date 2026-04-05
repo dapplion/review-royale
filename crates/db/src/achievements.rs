@@ -340,6 +340,7 @@ pub struct AchievementProgress {
     pub name: String,
     pub emoji: String,
     pub description: String,
+    #[serde(skip_serializing)]
     pub xp_reward: i32,
     pub rarity: AchievementRarity,
     pub category: AchievementCategory,
@@ -353,13 +354,35 @@ pub struct AchievementProgress {
     pub unlocked: bool,
 }
 
+#[derive(Debug, Clone, Default)]
+struct ProgressStats {
+    total_reviews: i64,
+    fast_reviews: i64,
+    first_responder_reviews: i64,
+    deep_reviews: i64,
+    bug_comments: i64,
+    nit_comments: i64,
+    max_streak: i64,
+    comebacks: i64,
+    max_reviews_in_day: i64,
+    closing_approvals: i64,
+    prs_authored: i64,
+    prs_merged: i64,
+}
+
+/// Achievement IDs hidden from the UI (placeholder, no real signal yet)
+const HIDDEN_ACHIEVEMENTS: &[&str] = &["helpful"];
+
 /// Get a user's progress toward all achievements
 pub async fn get_user_progress(
     pool: &PgPool,
     user_id: Uuid,
 ) -> Result<Vec<AchievementProgress>, sqlx::Error> {
-    // Get all achievements
-    let achievements = list_all(pool).await?;
+    // Get all achievements (excluding hidden ones)
+    let achievements: Vec<_> = list_all(pool).await?
+        .into_iter()
+        .filter(|a| !HIDDEN_ACHIEVEMENTS.contains(&a.id.as_str()))
+        .collect();
 
     // Get user's unlocked achievements
     let unlocked: std::collections::HashSet<String> = list_for_user(pool, user_id)
@@ -368,59 +391,32 @@ pub async fn get_user_progress(
         .map(|a| a.achievement_id)
         .collect();
 
-    // Get user stats for progress calculation
-    let stats = sqlx::query(
-        r#"
-        SELECT 
-            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1) as total_reviews,
-            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND comments_count >= 10) as deep_reviews,
-            (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1) as prs_authored,
-            (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1 AND state = 'merged') as prs_merged
-        "#,
-    )
-    .bind(user_id)
-    .fetch_one(pool)
-    .await?;
+    let stats = load_progress_stats(pool, user_id).await?;
 
-    let total_reviews: i64 = stats.get("total_reviews");
-    let first_reviews: i64 = 0; // Would need first_review_at tracking per PR
-    let deep_reviews: i64 = stats.get("deep_reviews");
-    let prs_authored: i64 = stats.get("prs_authored");
-    let prs_merged: i64 = stats.get("prs_merged");
+    let mut progress_list = Vec::with_capacity(achievements.len());
+    for a in achievements {
+        let (current, target) = get_progress_values(pool, user_id, &a.id, &stats).await?;
+        let is_unlocked = unlocked.contains(&a.id);
+        let progress_pct = if target > 0 {
+            ((current as f64 / target as f64) * 100.0).min(100.0)
+        } else {
+            0.0
+        };
 
-    let mut progress_list: Vec<AchievementProgress> = achievements
-        .into_iter()
-        .map(|a| {
-            let (current, target) = get_progress_values(
-                &a.id,
-                total_reviews,
-                first_reviews,
-                deep_reviews,
-                prs_authored,
-                prs_merged,
-            );
-            let is_unlocked = unlocked.contains(&a.id);
-            let progress_pct = if target > 0 {
-                ((current as f64 / target as f64) * 100.0).min(100.0)
-            } else {
-                0.0
-            };
-
-            AchievementProgress {
-                achievement_id: a.id.clone(),
-                name: a.name,
-                emoji: a.emoji,
-                description: a.description,
-                xp_reward: a.xp_reward,
-                rarity: a.rarity,
-                category: categorize_achievement(&a.id),
-                current,
-                target,
-                progress_pct,
-                unlocked: is_unlocked,
-            }
-        })
-        .collect();
+        progress_list.push(AchievementProgress {
+            achievement_id: a.id.clone(),
+            name: a.name,
+            emoji: a.emoji,
+            description: a.description,
+            xp_reward: a.xp_reward,
+            rarity: a.rarity,
+            category: categorize_achievement(&a.id),
+            current,
+            target,
+            progress_pct,
+            unlocked: is_unlocked,
+        });
+    }
 
     // Sort: unlocked last, then by progress (closest to unlock first)
     progress_list.sort_by(|a, b| match (a.unlocked, b.unlocked) {
@@ -435,41 +431,73 @@ pub async fn get_user_progress(
     Ok(progress_list)
 }
 
+async fn load_progress_stats(pool: &PgPool, user_id: Uuid) -> Result<ProgressStats, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT
+            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1) as total_reviews,
+            (SELECT COUNT(*) FROM reviews WHERE reviewer_id = $1 AND comments_count >= 10) as deep_reviews,
+            (SELECT COUNT(*) FROM review_comments WHERE user_id = $1 AND category IN ('critical', 'security')) as bug_comments,
+            (SELECT COUNT(*) FROM review_comments WHERE user_id = $1 AND category IN ('nit', 'cosmetic')) as nit_comments,
+            (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1) as prs_authored,
+            (SELECT COUNT(*) FROM pull_requests WHERE author_id = $1 AND state = 'merged') as prs_merged
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(ProgressStats {
+        total_reviews: row.get("total_reviews"),
+        fast_reviews: crate::reviews::count_fast_reviews(pool, user_id).await?,
+        first_responder_reviews: crate::reviews::count_first_responder_reviews(pool, user_id)
+            .await?,
+        deep_reviews: row.get("deep_reviews"),
+        bug_comments: row.get("bug_comments"),
+        nit_comments: row.get("nit_comments"),
+        max_streak: crate::reviews::max_review_streak(pool, user_id).await?,
+        comebacks: crate::reviews::count_comebacks(pool, user_id).await?,
+        max_reviews_in_day: crate::reviews::max_reviews_in_single_day(pool, user_id).await?,
+        closing_approvals: crate::reviews::count_closing_approvals(pool, user_id).await?,
+        prs_authored: row.get("prs_authored"),
+        prs_merged: row.get("prs_merged"),
+    })
+}
+
 /// Get current/target values for a specific achievement
-fn get_progress_values(
+async fn get_progress_values(
+    _pool: &PgPool,
+    _user_id: Uuid,
     achievement_id: &str,
-    total_reviews: i64,
-    first_reviews: i64,
-    deep_reviews: i64,
-    prs_authored: i64,
-    prs_merged: i64,
-) -> (i64, i64) {
-    match achievement_id {
+    stats: &ProgressStats,
+) -> Result<(i64, i64), sqlx::Error> {
+    let values = match achievement_id {
         // Review milestones
-        "first_review" => (total_reviews.min(1), 1),
-        "review_10" => (total_reviews.min(10), 10),
-        "review_50" => (total_reviews.min(50), 50),
-        "review_100" => (total_reviews.min(100), 100),
-        "review_500" => (total_reviews.min(500), 500),
-        "review_1000" => (total_reviews.min(1000), 1000),
+        "first_review" => (stats.total_reviews.min(1), 1),
+        "review_10" => (stats.total_reviews.min(10), 10),
+        "review_50" => (stats.total_reviews.min(50), 50),
+        "review_100" => (stats.total_reviews.min(100), 100),
+        "review_500" => (stats.total_reviews.min(500), 500),
+        "review_1000" => (stats.total_reviews.min(1000), 1000),
         // Speed achievements
-        "first_responder" => (first_reviews.min(25), 25),
-        "speed_demon" => (0, 10), // Would need to query fast reviews separately
+        "first_responder" => (stats.first_responder_reviews.min(25), 25),
+        "speed_demon" => (stats.fast_reviews.min(10), 10),
         // Quality achievements
-        "thorough" => (deep_reviews.min(5), 5),
-        "bug_hunter" => (0, 10), // Would need AI categorization data
-        "nitpicker" => (0, 50),  // Would need nit comment tracking
+        "thorough" => (stats.deep_reviews.min(5), 5),
+        "bug_hunter" => (stats.bug_comments.min(10), 10),
+        "nitpicker" => (stats.nit_comments.min(50), 50),
         // PR author achievements
-        "first_pr" => (prs_authored.min(1), 1),
-        "pr_merged_10" => (prs_merged.min(10), 10),
-        "pr_merged_100" => (prs_merged.min(100), 100),
-        // Streaks and special - can't easily calculate without more queries
-        "review_streak_7" => (0, 7),
-        "review_streak_30" => (0, 30),
-        "comeback_kid" => (0, 1),
-        "review_rampage" => (0, 5),
-        "the_closer" => (0, 10),
-        "helpful" => (0, 10),
+        "first_pr" => (stats.prs_authored.min(1), 1),
+        "pr_merged_10" => (stats.prs_merged.min(10), 10),
+        "pr_merged_100" => (stats.prs_merged.min(100), 100),
+        // Streaks and special
+        "review_streak_7" => (stats.max_streak.min(7), 7),
+        "review_streak_30" => (stats.max_streak.min(30), 30),
+        "comeback_kid" => (stats.comebacks.min(1), 1),
+        "review_rampage" => (stats.max_reviews_in_day.min(5), 5),
+        "the_closer" => (stats.closing_approvals.min(10), 10),
         _ => (0, 1),
-    }
+    };
+
+    Ok(values)
 }

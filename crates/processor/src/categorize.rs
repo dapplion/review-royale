@@ -6,6 +6,9 @@
 //! - `structural`: Architecture, design patterns, refactoring
 //! - `nit`: Minor suggestions, nice-to-haves
 //! - `question`: Clarifying questions, understanding requests
+//! - `critical`: Critical bugs, security vulnerabilities, data loss risks
+//! - `security`: Security-specific concerns
+//! - `performance`: Performance issues, optimization suggestions
 //!
 //! Quality score (1-10):
 //! - 1-3: Brief/superficial comments
@@ -28,6 +31,11 @@ pub enum Category {
     Structural,
     Nit,
     Question,
+    Critical,
+    Security,
+    Performance,
+    #[serde(other)]
+    Other,
 }
 
 impl Category {
@@ -38,6 +46,10 @@ impl Category {
             Self::Structural => "structural",
             Self::Nit => "nit",
             Self::Question => "question",
+            Self::Critical => "critical",
+            Self::Security => "security",
+            Self::Performance => "performance",
+            Self::Other => "other",
         }
     }
 }
@@ -128,6 +140,9 @@ Categories:
 - structural: Architecture, design patterns, refactoring, code organization
 - nit: Minor suggestions, nice-to-haves, opinions
 - question: Clarifying questions, understanding requests
+- critical: Critical bugs, security vulnerabilities, data loss risks, breaking changes
+- security: Security-specific concerns, auth issues, input validation
+- performance: Performance issues, optimization suggestions, resource usage
 
 Quality score (1-10):
 - 1-3: Brief/superficial (e.g., "nit: typo", "LGTM")
@@ -142,6 +157,14 @@ Respond with valid JSON only. Format:
   ]
 }
 "#;
+
+fn truncate_for_prompt(text: &str, max_chars: usize) -> String {
+    let mut truncated: String = text.chars().take(max_chars).collect();
+    if text.chars().count() > max_chars {
+        truncated.push_str("...");
+    }
+    truncated
+}
 
 /// Categorize uncategorized comments using AI
 pub async fn categorize_batch(
@@ -164,12 +187,7 @@ pub async fn categorize_batch(
     // Build prompt with comment bodies
     let mut user_content = String::from("Classify these code review comments:\n\n");
     for (i, (_, body, _)) in comments.iter().enumerate() {
-        // Truncate very long comments
-        let truncated = if body.len() > 500 {
-            format!("{}...", &body[..500])
-        } else {
-            body.clone()
-        };
+        let truncated = truncate_for_prompt(body, 500);
         user_content.push_str(&format!("[{}] {}\n\n", i, truncated));
     }
 
@@ -306,6 +324,10 @@ pub async fn get_stats(pool: &PgPool) -> Result<CategoryStats, sqlx::Error> {
             COUNT(*) FILTER (WHERE category = 'structural') as structural,
             COUNT(*) FILTER (WHERE category = 'nit') as nit,
             COUNT(*) FILTER (WHERE category = 'question') as question,
+            COUNT(*) FILTER (WHERE category = 'critical') as critical,
+            COUNT(*) FILTER (WHERE category = 'security') as security,
+            COUNT(*) FILTER (WHERE category = 'performance') as performance,
+            COUNT(*) FILTER (WHERE category = 'other') as other,
             AVG(quality_score) FILTER (WHERE quality_score IS NOT NULL) as avg_quality
         FROM review_comments
         "#,
@@ -322,6 +344,10 @@ pub async fn get_stats(pool: &PgPool) -> Result<CategoryStats, sqlx::Error> {
             structural: row.get::<i64, _>("structural") as usize,
             nit: row.get::<i64, _>("nit") as usize,
             question: row.get::<i64, _>("question") as usize,
+            critical: row.get::<i64, _>("critical") as usize,
+            security: row.get::<i64, _>("security") as usize,
+            performance: row.get::<i64, _>("performance") as usize,
+            other: row.get::<i64, _>("other") as usize,
         },
         avg_quality: row.get::<Option<f64>, _>("avg_quality").unwrap_or(0.0),
     })
@@ -343,6 +369,10 @@ pub struct CategoryBreakdown {
     pub structural: usize,
     pub nit: usize,
     pub question: usize,
+    pub critical: usize,
+    pub security: usize,
+    pub performance: usize,
+    pub other: usize,
 }
 
 #[cfg(test)]
@@ -356,6 +386,24 @@ mod tests {
         assert_eq!(Category::Structural.as_str(), "structural");
         assert_eq!(Category::Nit.as_str(), "nit");
         assert_eq!(Category::Question.as_str(), "question");
+        assert_eq!(Category::Critical.as_str(), "critical");
+        assert_eq!(Category::Security.as_str(), "security");
+        assert_eq!(Category::Performance.as_str(), "performance");
+        assert_eq!(Category::Other.as_str(), "other");
+    }
+
+    #[test]
+    fn test_parse_critical_category() {
+        let json = r#"{"index": 0, "category": "critical", "quality_score": 9}"#;
+        let result: CommentClassification = serde_json::from_str(json).unwrap();
+        assert_eq!(result.category, Category::Critical);
+    }
+
+    #[test]
+    fn test_parse_unknown_category_falls_back_to_other() {
+        let json = r#"{"index": 0, "category": "unknown_cat", "quality_score": 5}"#;
+        let result: CommentClassification = serde_json::from_str(json).unwrap();
+        assert_eq!(result.category, Category::Other);
     }
 
     #[test]

@@ -121,21 +121,16 @@ pub async fn count_by_user(
     Ok(row.get::<i64, _>("count"))
 }
 
-/// Count fast reviews by a user (submitted within 1 hour of the latest commit on the PR)
+/// Count fast reviews by a user (submitted within 1 hour of PR creation)
 pub async fn count_fast_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
         r#"
-        SELECT COUNT(DISTINCT r.id) as count
+        SELECT COUNT(*) as count
         FROM reviews r
         JOIN pull_requests pr ON r.pr_id = pr.id
-        JOIN LATERAL (
-            SELECT MAX(committed_at) as last_commit_at
-            FROM commits c
-            WHERE c.pr_id = pr.id AND c.committed_at < r.submitted_at
-        ) latest ON true
         WHERE r.reviewer_id = $1
-          AND latest.last_commit_at IS NOT NULL
-          AND r.submitted_at <= latest.last_commit_at + INTERVAL '1 hour'
+          AND r.submitted_at >= pr.created_at
+          AND r.submitted_at < pr.created_at + INTERVAL '1 hour'
         "#,
     )
     .bind(user_id)
@@ -145,9 +140,32 @@ pub async fn count_fast_reviews(pool: &PgPool, user_id: Uuid) -> Result<i64, sql
     Ok(row.get::<i64, _>("count"))
 }
 
-/// Check if user has a 7-day review streak (at least one review on 7 consecutive days)
-pub async fn has_7_day_streak(pool: &PgPool, user_id: Uuid) -> Result<bool, sqlx::Error> {
-    // Get distinct review dates, find max consecutive streak
+/// Count PRs where the user was the first reviewer.
+pub async fn count_first_responder_reviews(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        WITH first_reviews AS (
+            SELECT DISTINCT ON (r.pr_id) r.pr_id, r.reviewer_id
+            FROM reviews r
+            ORDER BY r.pr_id, r.submitted_at ASC, r.github_id ASC
+        )
+        SELECT COUNT(*) as count
+        FROM first_reviews
+        WHERE reviewer_id = $1
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}
+
+/// Get the user's maximum consecutive-day review streak.
+pub async fn max_review_streak(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
     let row = sqlx::query(
         r#"
         WITH review_dates AS (
@@ -173,8 +191,86 @@ pub async fn has_7_day_streak(pool: &PgPool, user_id: Uuid) -> Result<bool, sqlx
     .fetch_one(pool)
     .await?;
 
-    let max_streak: i64 = row.get("max_streak");
-    Ok(max_streak >= 7)
+    Ok(row.get::<i64, _>("max_streak"))
+}
+
+/// Check if user has a 7-day review streak (at least one review on 7 consecutive days)
+pub async fn has_7_day_streak(pool: &PgPool, user_id: Uuid) -> Result<bool, sqlx::Error> {
+    Ok(max_review_streak(pool, user_id).await? >= 7)
+}
+
+/// Count the number of 30+ day gaps followed by a new review day.
+pub async fn count_comebacks(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        WITH review_dates AS (
+            SELECT DISTINCT DATE(submitted_at) as review_date
+            FROM reviews
+            WHERE reviewer_id = $1
+        ),
+        review_gaps AS (
+            SELECT
+                review_date,
+                LAG(review_date) OVER (ORDER BY review_date) as previous_review_date
+            FROM review_dates
+        )
+        SELECT COUNT(*) FILTER (
+            WHERE previous_review_date IS NOT NULL
+              AND review_date - previous_review_date >= 30
+        ) as count
+        FROM review_gaps
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
+}
+
+/// Get the maximum number of reviews the user submitted in a single day.
+pub async fn max_reviews_in_single_day(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        SELECT COALESCE(MAX(day_count), 0) as max_reviews
+        FROM (
+            SELECT DATE(submitted_at) as review_date, COUNT(*) as day_count
+            FROM reviews
+            WHERE reviewer_id = $1
+            GROUP BY DATE(submitted_at)
+        ) daily_counts
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("max_reviews"))
+}
+
+/// Count merged PRs where the user's approval was the last review before merge.
+pub async fn count_closing_approvals(pool: &PgPool, user_id: Uuid) -> Result<i64, sqlx::Error> {
+    let row = sqlx::query(
+        r#"
+        WITH last_reviews_before_merge AS (
+            SELECT DISTINCT ON (r.pr_id) r.pr_id, r.reviewer_id, r.state
+            FROM reviews r
+            JOIN pull_requests pr ON pr.id = r.pr_id
+            WHERE pr.state = 'merged'
+              AND (pr.merged_at IS NULL OR r.submitted_at <= pr.merged_at)
+            ORDER BY r.pr_id, r.submitted_at DESC, r.github_id DESC
+        )
+        SELECT COUNT(*) as count
+        FROM last_reviews_before_merge
+        WHERE reviewer_id = $1
+          AND state = 'approved'
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row.get::<i64, _>("count"))
 }
 
 /// List all reviews (for recalculation)
