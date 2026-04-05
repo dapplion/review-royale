@@ -25,10 +25,12 @@ pub struct BackfillProgress {
     pub reviews_processed: u32,
     pub users_created: u32,
     pub current_pr: Option<i32>,
+    pub prs_skipped: u32,
 }
 
 /// Sync service for GitHub data
 pub struct Backfiller {
+    skip_existing: bool,
     pool: PgPool,
     client: GitHubClient,
     max_age_days: u32,
@@ -36,8 +38,13 @@ pub struct Backfiller {
 
 impl Backfiller {
     pub fn new(pool: PgPool, github_token: Option<String>, max_age_days: u32) -> Self {
+        Self::with_options(pool, github_token, max_age_days, false)
+    }
+
+    pub fn with_options(pool: PgPool, github_token: Option<String>, max_age_days: u32, skip_existing: bool) -> Self {
         let client = GitHubClient::new(github_token);
         Self {
+            skip_existing,
             pool,
             client,
             max_age_days,
@@ -79,6 +86,7 @@ impl Backfiller {
             reviews_processed: 0,
             users_created: 0,
             current_pr: None,
+            prs_skipped: 0,
         };
 
         info!("Processing {} PRs", prs.len());
@@ -88,6 +96,7 @@ impl Backfiller {
             match self.process_pr(&repo.id, owner, name, &pr).await {
                 Ok((reviews_count, new_users)) => {
                     progress.reviews_processed += reviews_count;
+                    if reviews_count == 0 && self.skip_existing { progress.prs_skipped += 1; }
                     progress.users_created += new_users;
                 }
                 Err(BackfillError::RateLimited(retry_after)) => {
@@ -109,8 +118,8 @@ impl Backfiller {
             // Log progress every 10 PRs
             if progress.prs_processed.is_multiple_of(10) {
                 info!(
-                    "Progress: {}/{} PRs, {} reviews",
-                    progress.prs_processed, progress.prs_total, progress.reviews_processed
+                    "Progress: {}/{} PRs ({} skipped), {} reviews",
+                    progress.prs_processed, progress.prs_total, progress.prs_skipped, progress.reviews_processed
                 );
             }
         }
@@ -119,8 +128,8 @@ impl Backfiller {
         db::repos::set_last_synced_at(&self.pool, repo.id, sync_start).await?;
 
         info!(
-            "Backfill complete: {} PRs, {} reviews, {} new users",
-            progress.prs_processed, progress.reviews_processed, progress.users_created
+            "Backfill complete: {} PRs ({} skipped), {} reviews, {} new users",
+            progress.prs_processed, progress.prs_skipped, progress.reviews_processed, progress.users_created
         );
 
         Ok(progress)
@@ -134,6 +143,14 @@ impl Backfiller {
         pr: &GithubPr,
     ) -> Result<(u32, u32), BackfillError> {
         debug!("Processing PR #{}: {}", pr.number, pr.title);
+
+        // Skip existing PRs if requested (avoids re-fetching reviews/comments/commits)
+        if self.skip_existing {
+            if db::prs::exists_by_github_id(&self.pool, pr.id).await.unwrap_or(false) {
+                debug!("Skipping existing PR #{}", pr.number);
+                return Ok((0, 0)); // skipped
+            }
+        }
 
         let mut new_users = 0u32;
 

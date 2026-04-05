@@ -316,3 +316,17 @@ pub async fn count_open(pool: &PgPool, repo_id: Uuid) -> Result<i64, sqlx::Error
 
     Ok(row.get::<i64, _>("count"))
 }
+
+/// Check if a PR with the given github_id already exists
+pub async fn exists_by_github_id(
+    pool: &PgPool,
+    github_id: i64,
+) -> Result<bool, sqlx::Error> {
+    let row = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM pull_requests WHERE github_id = $1)"
+    )
+    .bind(github_id)
+    .fetch_one(pool)
+    .await?;
+    Ok(row)
+}
