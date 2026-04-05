@@ -55,7 +55,7 @@
         <div id="sync-status-text" class="absolute top-1 right-2 text-xs text-gray-400 bg-gray-900/80 px-2 py-0.5 rounded"></div>
     </div>
     <!-- Landing Page View -->
-    <div id="landing-view" class="container mx-auto px-4 py-8 max-w-4xl">
+    <div id="landing-view" class="hidden container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-12">
             <div class="inline-block"><span class="text-6xl crown-float inline-block">👑</span></div>
             <h1 class="text-4xl md:text-5xl font-extrabold mt-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">Review Royale</h1>
@@ -95,15 +95,7 @@
             </div>
         </div>
 
-        <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 mb-8">
-            <h2 class="text-2xl font-bold mb-4">🚀 Want to track your repo?</h2>
-            <p class="text-gray-300 mb-4">
-                Review Royale is currently in early access. Request access to track your GitHub organization.
-            </p>
-            <a id="request-access-btn" href="#" onclick="requestAccess(); return false;" class="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold transition-colors">
-                🐦 Request Access on Twitter
-            </a>
-        </div>
+        
 
         <div class="text-center text-gray-500 text-sm">
             <a href="https://github.com/dapplion/review-royale" target="_blank" class="text-purple-400 hover:text-purple-300">View source on GitHub</a>
@@ -113,11 +105,12 @@
     </div>
 
     <!-- Main Leaderboard View -->
-    <div id="leaderboard-view" class="hidden container mx-auto px-4 py-8 max-w-5xl">
+    <div id="leaderboard-view" class="container mx-auto px-4 py-8 max-w-5xl">
         <header class="text-center mb-12">
             <div class="inline-block"><span class="text-6xl crown-float inline-block">👑</span></div>
             <h1 class="text-4xl md:text-5xl font-extrabold mt-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">Review Royale</h1>
             <p id="header-subtitle" class="text-gray-400 mt-2 text-lg">The ultimate PR review leaderboard</p>
+            
             <div id="repo-selector" class="hidden mt-4"></div>
         </header>
 
@@ -176,17 +169,21 @@
             <div class="bg-white/5 rounded-xl p-6 border border-white/10 text-left max-w-2xl mx-auto mb-6">
                 <h3 class="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-3">⚡ XP Formula</h3>
                 <div class="text-xs text-gray-400 mb-3">
-                    <strong class="text-white">Reviews</strong> are grouped into sessions (work on one version of code). A session ends when the author pushes new commits or 24h passes.
+                    <strong class="text-white">Reviews</strong> are grouped into sessions (work on one version of code). A session ends when the author pushes new commits or 24h passes. Comments are AI-classified by quality and category.
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs text-gray-400">
                     <div>📝 Base review session</div><div class="text-right text-white">+10 XP</div>
-                    <div>💬 Per comment</div><div class="text-right text-white">+5 XP</div>
+                    <div>💬 Comment (low quality)</div><div class="text-right text-white">+2 XP</div>
+                    <div>💬 Comment (medium quality)</div><div class="text-right text-white">+5 XP</div>
+                    <div>💬 Comment (high quality)</div><div class="text-right text-white">+8 XP</div>
+                    <div>🐛 Logic/critical bug catch</div><div class="text-right text-white">+3 XP bonus</div>
+                    <div>🏗️ Structural improvement</div><div class="text-right text-white">+2 XP bonus</div>
                     <div>⚡ Fast (&lt;1h after commits)</div><div class="text-right text-white">+10 XP</div>
                     <div>🔍 Thorough (>5 comments)</div><div class="text-right text-white">+5 XP</div>
                     <div>🎯 Deep review (>10 comments)</div><div class="text-right text-white">+10 XP</div>
                 </div>
                 <div class="mt-3 pt-3 border-t border-white/10 text-xs text-gray-500">
-                    Level = floor(√(XP / 100)) + 1 · Rubber stamps (0 comments, <1 min) = 0 XP
+                    Level = floor(√(XP / 100)) + 1 · Rubber stamps (0 comments, &lt;1 min) = 0 XP
                 </div>
             </div>
             <p class="text-gray-600 text-sm">Built with ❤️ for code reviewers everywhere</p>
@@ -249,6 +246,13 @@
             <div class="mb-8">
                 <h3 class="text-lg font-semibold mb-4">📊 XP Breakdown</h3>
                 <div id="xp-breakdown" class="bg-black/20 rounded-xl p-4 space-y-2 text-sm"></div>
+            </div>
+
+            <div id="categories-section" class="mb-8">
+                <h3 class="text-lg font-semibold mb-4">🎯 Review Style</h3>
+                <div id="categories-breakdown" class="bg-black/20 rounded-xl p-4">
+                    <div class="text-center text-gray-500 py-4">Loading...</div>
+                </div>
             </div>
 
             <div id="achievements-section" class="mb-8">
@@ -372,15 +376,8 @@
         // Allowed orgs for public access
         const ALLOWED_ORGS = ['sigp', 'ethereum', 'chainsafe', 'offchainlabs'];
 
-        // Pre-filled tweet for requesting access
-        function getTweetUrl(org) {
-            const text = `@dapplion can you add ${org || 'our org'} to Review Royale? 👑\n\nhttps://review-royale.fly.dev`;
-            return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-        }
-
-        function requestAccess(org) {
-            window.open(getTweetUrl(org), '_blank');
-        }
+        // getTweetUrl removed (self-hosted deployment)
+        function getTweetUrl(org) { return '#'; }
 
         // Sync progress bar functions
         function showSyncProgress(status) {
@@ -446,6 +443,16 @@
             const path = window.location.pathname;
             const hash = window.location.hash;
             
+            // Check for /global pattern (global leaderboard)
+            if (path === "/global" || path === "/global/") {
+                return { type: "global", user: hash.startsWith("#user/") ? hash.replace("#user/", "") : null };
+            }
+            // Check for /user/:username pattern (global user profile)
+            const globalUserMatch = path.match(/^\/user\/([^\/]+)\/?$/);
+            if (globalUserMatch) {
+                return { type: 'global-user', user: globalUserMatch[1] };
+            }
+            
             // Check for /:org/:repo/user/:username pattern (repo-scoped user profile)
             const repoUserMatch = path.match(/^\/([^\/]+)\/([^\/]+)\/user\/([^\/]+)\/?$/);
             if (repoUserMatch) {
@@ -491,6 +498,7 @@
         }
 
         function getLeaderboardUrl() {
+            if (!currentRepo) return '/';
             if (currentRepo) {
                 return `/${currentRepo.owner}/${currentRepo.name}`;
             }
@@ -501,11 +509,13 @@
             if (currentRepo) {
                 return `/${currentRepo.owner}/${currentRepo.name}/user/${username}`;
             }
-            return `/#user/${username}`;
+            return `/user/${username}`;
         }
 
         function isOrgAllowed(org) {
-            return ALLOWED_ORGS.includes(org.toLowerCase());
+            // Allow any org that has tracked repos in our DB
+            return availableRepos.some(r => r.owner.toLowerCase() === org.toLowerCase()) 
+                || ALLOWED_ORGS.includes(org.toLowerCase());
         }
 
         async function loadRepos() {
@@ -597,7 +607,7 @@
                                     <span class="font-semibold text-white user-login text-sm md:text-base truncate" title="${user.login}">${user.login}</span>
                                     <span class="md:hidden inline-flex items-center px-1.5 py-0.5 rounded bg-gradient-to-r ${levelColor} text-[10px] font-bold flex-shrink-0">${user.level}</span>
                                 </div>
-                                <div class="text-xs text-gray-500">${stats.prs_reviewed || 0} PR${(stats.prs_reviewed || 0) === 1 ? '' : 's'} reviewed</div>
+                                <div class="text-xs text-gray-500">${stats.prs_reviewed || 0} PR${(stats.prs_reviewed || 0) === 1 ? '' : 's'} reviewed${entry.last_review_at ? ` · ${getRelativeTime(new Date(entry.last_review_at))}` : ''}</div>
                             </div>
                         </div>
                         <div class="col-span-2 text-center hidden md:block">
@@ -733,31 +743,38 @@
         let openPrsSort = 'age-desc';
 
         async function showOpenPrs() {
-            if (!currentRepo) {
-                alert('Please select a repository first');
-                return;
-            }
-            
             document.getElementById('leaderboard-view').classList.add('hidden');
             document.getElementById('profile-view').classList.add('hidden');
             document.getElementById('open-prs-view').classList.remove('hidden');
             
             document.getElementById('back-from-prs-text').textContent = 
-                `Back to ${currentRepo.owner}/${currentRepo.name}`;
+                currentRepo ? `Back to ${currentRepo.owner}/${currentRepo.name}` : 'Back to Global Leaderboard';
             document.getElementById('open-prs-subtitle').textContent = 
-                `${currentRepo.owner}/${currentRepo.name}`;
+                currentRepo ? `${currentRepo.owner}/${currentRepo.name}` : 'All repositories';
 
             try {
-                const response = await fetch(`/api/repos/${currentRepo.owner}/${currentRepo.name}/open-prs`);
-                if (!response.ok) throw new Error('Failed to load PRs');
-                const data = await response.json();
+                let allPrs = [];
+                let totalNeedsReview = 0, totalApproved = 0, totalChanges = 0;
+                
+                const repos = currentRepo ? [currentRepo] : availableRepos;
+                for (const repo of repos) {
+                    const response = await fetch(`/api/repos/${repo.owner}/${repo.name}/open-prs`);
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    totalNeedsReview += data.needs_review;
+                    totalApproved += data.approved;
+                    totalChanges += data.changes_requested;
+                    // Tag each PR with repo info for display
+                    data.prs.forEach(pr => { pr._repo = `${repo.owner}/${repo.name}`; });
+                    allPrs = allPrs.concat(data.prs);
+                }
 
-                document.getElementById('prs-total').textContent = data.total;
-                document.getElementById('prs-needs-review').textContent = data.needs_review;
-                document.getElementById('prs-approved').textContent = data.approved;
-                document.getElementById('prs-changes').textContent = data.changes_requested;
+                document.getElementById('prs-total').textContent = allPrs.length;
+                document.getElementById('prs-needs-review').textContent = totalNeedsReview;
+                document.getElementById('prs-approved').textContent = totalApproved;
+                document.getElementById('prs-changes').textContent = totalChanges;
 
-                openPrsData = data.prs;
+                openPrsData = allPrs;
                 renderOpenPrs();
             } catch (e) {
                 console.error('Failed to load open PRs:', e);
@@ -841,7 +858,7 @@
                         <div class="col-span-1 text-center text-gray-500">#${pr.number}</div>
                         <div class="col-span-5">
                             <div class="font-medium text-white truncate">${pr.title}</div>
-                            <div class="text-xs text-gray-500">by ${pr.author}</div>
+                            <div class="text-xs text-gray-500">by ${pr.author}${pr._repo ? ` · <span class="text-purple-400">${pr._repo}</span>` : ''}</div>
                         </div>
                         <div class="col-span-2 text-center">
                             <span class="px-2 py-1 rounded text-xs ${statusClass}">${statusLabel}</span>
@@ -854,12 +871,16 @@
         }
 
         async function loadOpenPrsCount() {
-            if (!currentRepo) return;
             try {
-                const response = await fetch(`/api/repos/${currentRepo.owner}/${currentRepo.name}/open-prs`);
-                if (!response.ok) return;
-                const data = await response.json();
-                document.getElementById('stat-open-prs').textContent = data.total;
+                const repos = currentRepo ? [currentRepo] : availableRepos;
+                let total = 0;
+                for (const repo of repos) {
+                    const response = await fetch(`/api/repos/${repo.owner}/${repo.name}/open-prs`);
+                    if (!response.ok) continue;
+                    const data = await response.json();
+                    total += data.total;
+                }
+                document.getElementById('stat-open-prs').textContent = total;
             } catch (e) {
                 console.error('Failed to load open PRs count:', e);
             }
@@ -893,7 +914,7 @@
             const backText = document.getElementById('back-button-text');
             backText.textContent = currentRepo 
                 ? `Back to ${currentRepo.owner}/${currentRepo.name}` 
-                : 'Back to Leaderboard';
+                : 'Back to Global Leaderboard';
 
             // Find user in leaderboard data first
             const entry = leaderboardData.find(e => e.user.login === username);
@@ -909,7 +930,6 @@
 
                 document.getElementById('profile-avatar').src = user.avatar_url || `https://github.com/${user.login}.png`;
                 document.getElementById('profile-name').textContent = user.login;
-                // Use period-specific XP, not total user.xp
                 const periodXp = stats.period_xp || 0;
                 document.getElementById('profile-xp').textContent = formatNumber(periodXp);
                 document.getElementById('profile-rank').textContent = `Rank #${rank}`;
@@ -925,19 +945,47 @@
                 document.getElementById('profile-comments').textContent = stats.comments_written || 0;
                 document.getElementById('profile-prs').textContent = stats.prs_authored || 0;
 
-                // XP Breakdown (estimated based on current formula)
-                const reviewBaseXP = (stats.prs_reviewed || 0) * 10;
-                const commentXP = (stats.comments_written || 0) * 5;
-                const estimatedTotal = reviewBaseXP + commentXP;
-                const bonusXP = periodXp - estimatedTotal;
+                // XP Breakdown using real category data
                 const breakdown = document.getElementById('xp-breakdown');
-                breakdown.innerHTML = `
-                    <div class="flex justify-between"><span class="text-gray-400">📝 PRs reviewed (${stats.prs_reviewed || 0} × 10)</span><span class="text-white">+${formatNumber(reviewBaseXP)} XP</span></div>
-                    <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × 5)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
-                    ${bonusXP > 0 ? `<div class="flex justify-between"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
-                    <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(periodXp)} XP</span></div>
-                    <div class="text-xs text-gray-600 mt-2">Bonuses: Fast (<1h) +10, Thorough (>5 comments) +5, Deep (>10) +10</div>
-                `;
+                const sessionBaseXP = (stats.sessions || stats.prs_reviewed || 0) * 10;
+                
+                try {
+                    const catResponse = await fetch(`${getUserApiBase(username)}/categories?period=${currentProfilePeriod}`);
+                    if (catResponse.ok) {
+                        const cats = await catResponse.json();
+                        let commentXP = 0;
+                        const catLines = cats.map(d => {
+                            const cfg = categoryConfig[d.category] || categoryConfig.other;
+                            // Estimate per-comment XP from avg quality
+                            let base = d.avg_quality >= 7 ? 8 : d.avg_quality >= 4 ? 5 : 2;
+                            let bonus = (d.category === 'logic' || d.category === 'critical') ? 3 : d.category === 'structural' ? 2 : 0;
+                            let catXP = d.count * (base + bonus);
+                            commentXP += catXP;
+                            return `<div class="flex justify-between"><span class="text-gray-400">${cfg.icon} ${cfg.label} (${d.count} × ${base}${bonus ? `+${bonus}` : ''})</span><span class="text-white">+${formatNumber(catXP)} XP</span></div>`;
+                        }).join('');
+                        
+                        const bonusXP = Math.max(0, periodXp - sessionBaseXP - commentXP);
+                        breakdown.innerHTML = `
+                            <div class="flex justify-between"><span class="text-gray-400">📝 Review sessions (${stats.sessions || stats.prs_reviewed || 0} × 10)</span><span class="text-white">+${formatNumber(sessionBaseXP)} XP</span></div>
+                            <div class="mt-2 mb-1 text-xs text-gray-500 uppercase tracking-wider">Comment XP by category</div>
+                            ${catLines}
+                            ${bonusXP > 0 ? `<div class="flex justify-between mt-2"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
+                            <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(periodXp)} XP</span></div>
+                        `;
+                    } else {
+                        throw new Error('no categories');
+                    }
+                } catch (e) {
+                    // Fallback to simple breakdown
+                    const commentXP = (stats.comments_written || 0) * 5;
+                    const bonusXP = Math.max(0, periodXp - sessionBaseXP - commentXP);
+                    breakdown.innerHTML = `
+                        <div class="flex justify-between"><span class="text-gray-400">📝 Review sessions (${stats.sessions || stats.prs_reviewed || 0} × 10)</span><span class="text-white">+${formatNumber(sessionBaseXP)} XP</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">💬 Comments (${stats.comments_written || 0} × ~5 avg)</span><span class="text-white">+${formatNumber(commentXP)} XP</span></div>
+                        ${bonusXP > 0 ? `<div class="flex justify-between"><span class="text-gray-400">⚡ Speed & depth bonuses</span><span class="text-white">+${formatNumber(bonusXP)} XP</span></div>` : ''}
+                        <div class="flex justify-between border-t border-white/10 pt-2 mt-2 font-bold"><span>Total</span><span class="text-purple-400">${formatNumber(periodXp)} XP</span></div>
+                    `;
+                }
 
                 // Display achievements with progress
                 const achievements = data.achievements || [];
@@ -956,6 +1004,7 @@
 
         async function loadActivityChart(username) {
             try {
+                loadCategoryBreakdown(username, currentProfilePeriod);
                 const response = await fetch(`${getUserApiBase(username)}/activity`);
                 let labels = [], reviewData = [], xpData = [];
                 
@@ -1123,6 +1172,18 @@
         window.onpopstate = async () => {
             const urlInfo = parseUrl();
             
+            // Global user profile
+            if (urlInfo.type === 'global-user') {
+                if (currentRepo) {
+                    currentRepo = null;
+                    updateSubtitle();
+                    renderRepoNav();
+                    await loadLeaderboard(currentPeriod);
+                }
+                showProfile(urlInfo.user);
+                return;
+            }
+            
             // Update repo context if changed
             if (urlInfo.type === 'repo' || urlInfo.type === 'repo-user') {
                 if (!currentRepo || currentRepo.owner !== urlInfo.owner || currentRepo.name !== urlInfo.name) {
@@ -1140,7 +1201,7 @@
             } else if (currentRepo) {
                 currentRepo = null;
                 updateSubtitle();
-                renderRepoSelector();
+                renderRepoNav();
                 await loadLeaderboard(currentPeriod);
             }
             
@@ -1156,7 +1217,7 @@
             if (currentRepo) {
                 subtitle.innerHTML = `<a href="https://github.com/${currentRepo.owner}/${currentRepo.name}" target="_blank" class="text-purple-400 hover:text-purple-300">${currentRepo.owner}/${currentRepo.name}</a> leaderboard`;
             } else {
-                subtitle.textContent = 'The ultimate PR review leaderboard';
+                subtitle.textContent = !currentRepo ? "All repositories combined" : "The ultimate PR review leaderboard";
             }
         }
 
@@ -1165,11 +1226,9 @@
             body.innerHTML = `
                 <div class="px-6 py-16 text-center">
                     <div class="text-6xl mb-4">🔒</div>
-                    <h3 class="text-xl font-semibold text-gray-300 mb-2">Access Restricted</h3>
-                    <p class="text-gray-500 mb-4">The <strong>${org}</strong> organization is not publicly accessible yet.</p>
-                    <a href="${getTweetUrl(org)}" target="_blank" class="inline-block mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold transition-colors">🐦 Request Access on Twitter</a>
-                    <br>
-                    <button onclick="window.location.href='/'" class="mt-4 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-gray-400">Back to Home</button>
+                    <h3 class="text-xl font-semibold text-gray-300 mb-2">Repository Not Tracked</h3>
+                    <p class="text-gray-500 mb-6">The <strong>${org}</strong> organization is not currently tracked on this instance.</p>
+                    <button onclick="window.location.href='/'" class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-gray-300">Back to Leaderboard</button>
                 </div>
             `;
         }
@@ -1186,6 +1245,29 @@
         function hideLanding() {
             document.getElementById('landing-view').classList.add('hidden');
             document.getElementById('leaderboard-view').classList.remove('hidden');
+        }
+
+        function renderRepoNav() {
+            const container = document.getElementById('repo-selector');
+            if (!container) return;
+            
+            if (availableRepos.length <= 1) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+            
+            const globalActive = !currentRepo;
+            container.classList.remove('hidden');
+            container.innerHTML = `
+                <div id="repo-nav" class="flex flex-wrap justify-center gap-2 mt-4">
+                    <a href="/" class="px-4 py-2 rounded-full text-sm font-medium transition-all border ${globalActive ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-gray-400'}">🌍 All Repos</a>
+                    ${availableRepos.map(repo => {
+                        const active = currentRepo && currentRepo.owner === repo.owner && currentRepo.name === repo.name;
+                        return `<a href="/${repo.owner}/${repo.name}" class="px-4 py-2 rounded-full text-sm font-medium transition-all border ${active ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 hover:bg-white/10 border-white/10 text-gray-400'}">${repo.name}</a>`;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function renderLandingRepos() {
@@ -1281,8 +1363,8 @@
                                         <div class="text-sm text-gray-400">${a.description}</div>
                                         <div class="flex items-center gap-3 mt-2 text-xs">
                                             <span class="${getRarityColor(a.rarity)} capitalize">${a.rarity}</span>
-                                            <span class="text-purple-400">+${a.xp_reward} XP</span>
-                                            <span class="text-gray-600">${a.unlock_count} unlocked</span>
+                                            
+                                            <span class="text-gray-600">${a.unlock_count} users</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1378,6 +1460,63 @@
             }
         }
 
+        const categoryConfig = {
+            logic: { icon: '🐛', color: 'text-red-400', bg: 'bg-red-400/40', label: 'Logic / Bug Catches' },
+            structural: { icon: '🏗️', color: 'text-blue-400', bg: 'bg-blue-400/40', label: 'Structural / Design' },
+            nit: { icon: '✏️', color: 'text-yellow-400', bg: 'bg-yellow-400/40', label: 'Nits' },
+            question: { icon: '❓', color: 'text-purple-400', bg: 'bg-purple-400/40', label: 'Questions' },
+            cosmetic: { icon: '🎨', color: 'text-pink-400', bg: 'bg-pink-400/40', label: 'Cosmetic' },
+            critical: { icon: '🚨', color: 'text-red-500', bg: 'bg-red-500/40', label: 'Critical' },
+            performance: { icon: '⚡', color: 'text-orange-400', bg: 'bg-orange-400/40', label: 'Performance' },
+            security: { icon: '🔒', color: 'text-green-400', bg: 'bg-green-400/40', label: 'Security' },
+            other: { icon: '📝', color: 'text-gray-400', bg: 'bg-gray-400/40', label: 'Other' },
+        };
+
+        async function loadCategoryBreakdown(username, period) {
+            const container = document.getElementById('categories-breakdown');
+            try {
+                const periodParam = period ? `?period=${period}` : '';
+                const response = await fetch(`${getUserApiBase(username)}/categories${periodParam}`);
+                if (!response.ok) throw new Error('Failed');
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-4">No categorized comments yet</div>';
+                    return;
+                }
+
+                const total = data.reduce((s, d) => s + d.count, 0);
+                
+                // Stacked bar
+                const barHtml = `<div class="flex rounded-full overflow-hidden h-5 mb-4">${data.map(d => {
+                    const cfg = categoryConfig[d.category] || categoryConfig.other;
+                    const width = (d.count / total * 100).toFixed(1);
+                    return `<div class="${cfg.bg} border-r border-black/20" style="width:${width}%" title="${cfg.label}: ${d.count} (${width}%)"></div>`;
+                }).join('')}</div>`;
+
+                // Legend with quality scores
+                const legendHtml = data.map(d => {
+                    const cfg = categoryConfig[d.category] || categoryConfig.other;
+                    const qualityStars = d.avg_quality >= 7 ? '🔥' : d.avg_quality >= 5 ? '⭐' : '';
+                    return `
+                        <div class="flex items-center justify-between py-1.5">
+                            <div class="flex items-center gap-2">
+                                <span>${cfg.icon}</span>
+                                <span class="${cfg.color} text-sm font-medium">${cfg.label}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-500">${d.count} comments (${d.percentage}%)</span>
+                                <span class="text-xs ${cfg.color}" title="Avg quality: ${d.avg_quality}/10">avg ${d.avg_quality} ${qualityStars}</span>
+                            </div>
+                        </div>`;
+                }).join('');
+
+                container.innerHTML = barHtml + '<div class="space-y-0.5">' + legendHtml + '</div>';
+            } catch (e) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">Review style data unavailable</div>';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             // Load available repos first
             await loadRepos();
@@ -1385,9 +1524,32 @@
             // Parse URL to determine context
             const urlInfo = parseUrl();
             
-            // Root URL shows landing page
-            if (urlInfo.type === 'leaderboard' && !urlInfo.user && window.location.pathname === '/') {
-                showLanding();
+            // Global user profile (/user/:username)
+            if (urlInfo.type === 'global-user') {
+                currentRepo = null;
+                hideLanding();
+                updateSubtitle();
+                renderRepoNav();
+                await loadLeaderboard(currentPeriod);
+                showProfile(urlInfo.user);
+                loadDataInfo();
+                return;
+            }
+            
+            // Root URL (/) and /global both show global leaderboard
+            if (urlInfo.type === 'global' || 
+                (urlInfo.type === 'leaderboard' && !urlInfo.user && window.location.pathname === '/')) {
+                currentRepo = null;
+                hideLanding();
+                updateSubtitle();
+                renderRepoNav();
+                if (urlInfo.user) {
+                    await loadLeaderboard(currentPeriod);
+                    showProfile(urlInfo.user);
+                } else {
+                    await loadLeaderboard(currentPeriod);
+                }
+                loadDataInfo();
                 return;
             }
             
@@ -1404,14 +1566,14 @@
                 }
                 currentRepo = { owner: urlInfo.owner, name: urlInfo.name };
                 updateSubtitle();
-                renderRepoSelector();
+                renderRepoNav();
             }
             
             if (urlInfo.user) {
-                await loadLeaderboard('month');
+                await loadLeaderboard(currentPeriod);
                 showProfile(urlInfo.user);
             } else {
-                await loadLeaderboard('month');
+                await loadLeaderboard(currentPeriod);
             }
             loadDataInfo();
             
