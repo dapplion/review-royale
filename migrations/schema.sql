@@ -205,7 +205,6 @@ INSERT INTO achievements (id, name, description, emoji, xp_reward, rarity) VALUE
     ('comeback_kid', 'Comeback Kid', 'Return after 30+ day absence', '🦅', 150, 'uncommon'),
     ('review_rampage', 'Review Rampage', 'Review 5 PRs in a single day', '💥', 200, 'uncommon'),
     ('the_closer', 'The Closer', 'Your approval led to 10 merges', '🎬', 350, 'rare'),
-    ('helpful', 'Helpful', 'Get 10 "thanks" replies to your comments', '🙏', 200, 'uncommon'),
     -- PR author achievements
     ('first_pr', 'Ship It', 'Create your first PR', '🚀', 25, 'common'),
     ('pr_merged_10', 'Contributor', 'Get 10 PRs merged', '🎯', 150, 'uncommon'),
@@ -218,5 +217,5 @@ ON CONFLICT (id) DO UPDATE SET
     rarity = EXCLUDED.rarity;
 
 -- Remove deprecated achievements (must delete user_achievements first due to FK)
-DELETE FROM user_achievements WHERE achievement_id = 'night_owl';
-DELETE FROM achievements WHERE id = 'night_owl';
+DELETE FROM user_achievements WHERE achievement_id IN ('night_owl', 'helpful');
+DELETE FROM achievements WHERE id IN ('night_owl', 'helpful');

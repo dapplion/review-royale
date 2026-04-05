@@ -122,12 +122,25 @@ pub async fn recalculate_all_xp(pool: &PgPool) -> Result<RecalculationStats, sql
             .await;
     }
 
-    // Step 6: Check and unlock achievements for all users
-    info!("Checking achievements for {} users", users_updated.len());
+    // Step 6: Check achievements and award achievement XP for all participating users
+    let participant_ids = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT DISTINCT user_id
+        FROM (
+            SELECT reviewer_id as user_id FROM reviews
+            UNION
+            SELECT author_id as user_id FROM pull_requests
+        ) participants
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    info!("Checking achievements for {} users", participant_ids.len());
     let checker = crate::achievements::AchievementChecker::new(pool.clone());
     let mut total_achievements = 0;
-    for user_id in &users_updated {
-        if let Ok(unlocked) = checker.check_reviewer(user_id).await {
+    for user_id in &participant_ids {
+        if let Ok(unlocked) = checker.check_user(user_id).await {
             total_achievements += unlocked.len();
         }
     }
