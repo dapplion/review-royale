@@ -94,6 +94,8 @@ async fn main() -> anyhow::Result<()> {
             get(routes::users::activity),
         )
         .route("/api/users/:username/reviews", get(routes::users::reviews))
+        .route("/api/users/:username/categories", get(routes::users::category_breakdown))
+        .route("/api/repos/:owner/:name/users/:username/categories", get(routes::users::repo_category_breakdown))
         .route(
             "/api/users/:username/achievements/progress",
             get(routes::achievements::user_progress),

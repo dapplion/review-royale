@@ -324,3 +324,60 @@ pub async fn get_recent_reviews_for_repo(
         })
         .collect())
 }
+
+/// Category breakdown for a user's review comments
+#[derive(Debug, serde::Serialize)]
+pub struct CategoryBreakdown {
+    pub category: String,
+    pub count: i64,
+    pub avg_quality: f64,
+    pub percentage: f64,
+}
+
+/// Get review comment category breakdown for a user
+pub async fn get_category_breakdown(
+    pool: &PgPool,
+    user_id: Uuid,
+    repo_id: Option<Uuid>,
+    since: Option<chrono::DateTime<chrono::Utc>>,
+) -> Result<Vec<CategoryBreakdown>, sqlx::Error> {
+    let rows = sqlx::query(
+        r#"
+        WITH user_comments AS (
+            SELECT rc.category, rc.quality_score
+            FROM review_comments rc
+            JOIN pull_requests pr ON pr.id = rc.pr_id
+            WHERE rc.user_id = $1
+              AND rc.category IS NOT NULL
+              AND ($2::uuid IS NULL OR pr.repo_id = $2)
+              AND ($3::timestamptz IS NULL OR rc.created_at >= $3)
+        ),
+        total AS (
+            SELECT COUNT(*) as total_count FROM user_comments
+        )
+        SELECT 
+            uc.category,
+            COUNT(*)::bigint as count,
+            ROUND(AVG(uc.quality_score)::numeric, 1)::float8 as avg_quality,
+            ROUND(((COUNT(*)::numeric / NULLIF(t.total_count, 0)::numeric) * 100)::numeric, 1)::float8 as percentage
+        FROM user_comments uc, total t
+        GROUP BY uc.category, t.total_count
+        ORDER BY count DESC
+        "#,
+    )
+    .bind(user_id)
+    .bind(repo_id)
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .iter()
+        .map(|row| CategoryBreakdown {
+            category: row.get("category"),
+            count: row.get("count"),
+            avg_quality: row.get("avg_quality"),
+            percentage: row.get("percentage"),
+        })
+        .collect())
+}
